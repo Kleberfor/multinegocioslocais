@@ -1,279 +1,362 @@
 // Algoritmo de Score de Presença Digital
+// Baseado nas Diretrizes Oficiais do Google Business Profile
 // S-2.2: Calcular score de 0 a 100
 
 import { PlaceDetails } from "./google";
+import {
+  GBP_GUIDELINES,
+  GuidelineCheck,
+  CATEGORY_WEIGHTS,
+} from "./gbp-guidelines";
+
+export interface CheckResult {
+  guideline: GuidelineCheck;
+  passed: boolean;
+  currentValue?: string;
+  recommendation?: string;
+}
+
+export interface CategoryScore {
+  name: string;
+  displayName: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  status: "excellent" | "good" | "average" | "poor";
+  checks: CheckResult[];
+  passedCount: number;
+  totalCount: number;
+}
 
 export interface ScoreBreakdown {
   total: number;
-  categories: {
-    name: string;
-    score: number;
-    maxScore: number;
-    percentage: number;
-    status: "excellent" | "good" | "average" | "poor";
-    details: string;
-  }[];
+  grade: "A" | "B" | "C" | "D" | "F";
+  categories: CategoryScore[];
+  criticalIssues: CheckResult[];
   opportunities: {
-    priority: "high" | "medium" | "low";
+    priority: "critical" | "high" | "medium" | "low";
     title: string;
     description: string;
+    howToFix: string;
     impact: string;
+    googleTip?: string;
   }[];
   strengths: string[];
+  summary: {
+    totalChecks: number;
+    passedChecks: number;
+    criticalPassed: number;
+    criticalTotal: number;
+  };
 }
 
 /**
- * Calcula o score de presença digital baseado nos dados do Google Business Profile
- *
- * Pesos:
- * - Avaliações (rating + quantidade): 25%
- * - Fotos: 15%
- * - Informações (telefone, site, horário): 20%
- * - Engajamento (reviews recentes): 25%
- * - Categorização: 15%
+ * Calcula o score de presença digital baseado nas diretrizes do Google
  */
 export function calculateScore(place: PlaceDetails): ScoreBreakdown {
-  const categories: ScoreBreakdown["categories"] = [];
-  const opportunities: ScoreBreakdown["opportunities"] = [];
+  const checkResults: CheckResult[] = [];
   const strengths: string[] = [];
 
-  // 1. AVALIAÇÕES (25 pontos)
-  let reviewScore = 0;
-  const maxReviewScore = 25;
+  // Executar todas as verificações
+  for (const guideline of GBP_GUIDELINES) {
+    const result = evaluateGuideline(guideline, place);
+    checkResults.push(result);
+  }
 
-  if (place.rating && place.userRatingsTotal) {
-    // Rating contribui com até 15 pontos (5.0 = 15 pontos)
-    const ratingPoints = (place.rating / 5) * 15;
+  // Agrupar por categoria
+  const categoryScores: CategoryScore[] = [];
+  const categoryNames = ["info", "photos", "engagement", "content", "trust"];
+  const categoryDisplayNames: Record<string, string> = {
+    info: "Informações Básicas",
+    photos: "Fotos",
+    engagement: "Avaliações e Engajamento",
+    content: "Conteúdo e Atualizações",
+    trust: "Confiança e Verificação",
+  };
 
-    // Quantidade de avaliações contribui com até 10 pontos
-    // 100+ avaliações = 10 pontos
-    const quantityPoints = Math.min((place.userRatingsTotal / 100) * 10, 10);
+  for (const catName of categoryNames) {
+    const catChecks = checkResults.filter(
+      (r) => r.guideline.category === catName
+    );
+    const passed = catChecks.filter((r) => r.passed).length;
+    const total = catChecks.length;
+    const percentage = total > 0 ? Math.round((passed / total) * 100) : 0;
+    const maxScore = CATEGORY_WEIGHTS[catName as keyof typeof CATEGORY_WEIGHTS];
+    const score = Math.round((percentage / 100) * maxScore);
 
-    reviewScore = Math.round(ratingPoints + quantityPoints);
+    categoryScores.push({
+      name: catName,
+      displayName: categoryDisplayNames[catName],
+      score,
+      maxScore,
+      percentage,
+      status: getStatus(percentage),
+      checks: catChecks,
+      passedCount: passed,
+      totalCount: total,
+    });
+  }
 
-    if (place.rating >= 4.5 && place.userRatingsTotal >= 50) {
-      strengths.push(
-        `Excelente reputação: ${place.rating} estrelas com ${place.userRatingsTotal} avaliações`
+  // Calcular score total
+  const total = categoryScores.reduce((sum, cat) => sum + cat.score, 0);
+  const grade = getGrade(total);
+
+  // Identificar problemas críticos
+  const criticalIssues = checkResults.filter(
+    (r) => !r.passed && r.guideline.importance === "critical"
+  );
+
+  // Gerar lista de oportunidades (ordenadas por importância)
+  const opportunities = checkResults
+    .filter((r) => !r.passed)
+    .sort((a, b) => {
+      const order = { critical: 0, high: 1, medium: 2, low: 3 };
+      return (
+        order[a.guideline.importance] - order[b.guideline.importance]
       );
-    }
+    })
+    .map((r) => ({
+      priority: r.guideline.importance,
+      title: r.guideline.title,
+      description: r.guideline.description,
+      howToFix: r.guideline.howToFix,
+      impact: r.guideline.impact,
+      googleTip: r.guideline.googleTip,
+    }));
+
+  // Identificar pontos fortes
+  const passedCritical = checkResults.filter(
+    (r) => r.passed && r.guideline.importance === "critical"
+  );
+  if (passedCritical.length > 0) {
+    strengths.push(
+      `${passedCritical.length} requisitos críticos atendidos`
+    );
   }
 
-  if (reviewScore < 15) {
-    opportunities.push({
-      priority: "high",
-      title: "Aumentar avaliações",
-      description:
-        "Incentive clientes satisfeitos a deixarem avaliações no Google",
-      impact: "Pode aumentar seu score em até 15 pontos",
-    });
+  if (place.rating && place.rating >= 4.5) {
+    strengths.push(`Excelente avaliação: ${place.rating} estrelas`);
   }
 
-  categories.push({
-    name: "Avaliações",
-    score: reviewScore,
-    maxScore: maxReviewScore,
-    percentage: Math.round((reviewScore / maxReviewScore) * 100),
-    status: getStatus(reviewScore, maxReviewScore),
-    details: place.rating
-      ? `${place.rating} estrelas (${place.userRatingsTotal || 0} avaliações)`
-      : "Sem avaliações",
-  });
-
-  // 2. FOTOS (15 pontos)
-  let photoScore = 0;
-  const maxPhotoScore = 15;
-
-  if (place.photos) {
-    // 10+ fotos = pontuação máxima
-    photoScore = Math.min(Math.round((place.photos / 10) * maxPhotoScore), maxPhotoScore);
-
-    if (place.photos >= 10) {
-      strengths.push(`Galeria completa com ${place.photos} fotos`);
-    }
+  if (place.userRatingsTotal && place.userRatingsTotal >= 100) {
+    strengths.push(
+      `Alto volume de avaliações: ${place.userRatingsTotal} avaliações`
+    );
   }
 
-  if (photoScore < 10) {
-    opportunities.push({
-      priority: place.photos === 0 ? "high" : "medium",
-      title: "Adicionar mais fotos",
-      description:
-        "Fotos de qualidade aumentam em 42% a chance de cliques no seu perfil",
-      impact: `Adicione ${Math.max(10 - (place.photos || 0), 0)} fotos para maximizar`,
-    });
-  }
-
-  categories.push({
-    name: "Fotos",
-    score: photoScore,
-    maxScore: maxPhotoScore,
-    percentage: Math.round((photoScore / maxPhotoScore) * 100),
-    status: getStatus(photoScore, maxPhotoScore),
-    details: `${place.photos || 0} fotos no perfil`,
-  });
-
-  // 3. INFORMAÇÕES (20 pontos)
-  let infoScore = 0;
-  const maxInfoScore = 20;
-  const infoItems: string[] = [];
-
-  if (place.phoneNumber) {
-    infoScore += 5;
-    infoItems.push("Telefone");
-  } else {
-    opportunities.push({
-      priority: "high",
-      title: "Adicionar telefone",
-      description: "Clientes precisam de uma forma fácil de entrar em contato",
-      impact: "Informação essencial para conversões",
-    });
+  if (place.photos && place.photos >= 10) {
+    strengths.push(`Boa quantidade de fotos: ${place.photos} fotos`);
   }
 
   if (place.website) {
-    infoScore += 5;
-    infoItems.push("Website");
-  } else {
-    opportunities.push({
-      priority: "medium",
-      title: "Adicionar website",
-      description: "Um site aumenta a credibilidade do seu negócio",
-      impact: "Melhora a confiança do cliente",
-    });
+    strengths.push("Site vinculado ao perfil");
   }
 
   if (place.openingHours?.weekdayText) {
-    infoScore += 5;
-    infoItems.push("Horário de funcionamento");
-  } else {
-    opportunities.push({
-      priority: "high",
-      title: "Definir horário de funcionamento",
-      description: "Clientes querem saber quando você está aberto",
-      impact: "Evita perda de clientes por informação incompleta",
-    });
+    strengths.push("Horários de funcionamento configurados");
   }
 
-  if (place.address) {
-    infoScore += 5;
-    infoItems.push("Endereço");
-  }
-
-  if (infoScore >= 15) {
-    strengths.push("Informações de contato completas");
-  }
-
-  categories.push({
-    name: "Informações",
-    score: infoScore,
-    maxScore: maxInfoScore,
-    percentage: Math.round((infoScore / maxInfoScore) * 100),
-    status: getStatus(infoScore, maxInfoScore),
-    details:
-      infoItems.length > 0 ? infoItems.join(", ") : "Informações incompletas",
-  });
-
-  // 4. ENGAJAMENTO / ATIVIDADE (25 pontos)
-  let engagementScore = 0;
-  const maxEngagementScore = 25;
-
-  if (place.reviews && place.reviews.length > 0) {
-    // Verificar reviews recentes (últimos 6 meses)
-    const sixMonthsAgo = Date.now() / 1000 - 6 * 30 * 24 * 60 * 60;
-    const recentReviews = place.reviews.filter(
-      (r) => r.time > sixMonthsAgo
-    ).length;
-
-    // Reviews recentes contribuem mais
-    engagementScore = Math.min(
-      Math.round((recentReviews / 5) * maxEngagementScore),
-      maxEngagementScore
-    );
-
-    if (recentReviews >= 3) {
-      strengths.push(`${recentReviews} avaliações recentes nos últimos 6 meses`);
-    }
-  }
-
-  if (engagementScore < 15) {
-    opportunities.push({
-      priority: "medium",
-      title: "Aumentar engajamento",
-      description:
-        "Peça avaliações regularmente para manter seu perfil ativo",
-      impact: "Perfis ativos aparecem mais nas buscas",
-    });
-  }
-
-  categories.push({
-    name: "Engajamento",
-    score: engagementScore,
-    maxScore: maxEngagementScore,
-    percentage: Math.round((engagementScore / maxEngagementScore) * 100),
-    status: getStatus(engagementScore, maxEngagementScore),
-    details:
-      place.reviews && place.reviews.length > 0
-        ? `${place.reviews.length} avaliações com texto`
-        : "Sem avaliações detalhadas",
-  });
-
-  // 5. CATEGORIZAÇÃO (15 pontos)
-  let categoryScore = 0;
-  const maxCategoryScore = 15;
-
-  if (place.types && place.types.length > 0) {
-    // Mais categorias = melhor visibilidade
-    categoryScore = Math.min(
-      Math.round((place.types.length / 5) * maxCategoryScore),
-      maxCategoryScore
-    );
-
-    if (place.types.length >= 3) {
-      strengths.push("Bem categorizado no Google");
-    }
-  }
-
-  if (categoryScore < 10) {
-    opportunities.push({
-      priority: "low",
-      title: "Revisar categorias",
-      description:
-        "Verifique se todas as categorias relevantes estão selecionadas",
-      impact: "Melhora a descoberta por diferentes buscas",
-    });
-  }
-
-  categories.push({
-    name: "Categorização",
-    score: categoryScore,
-    maxScore: maxCategoryScore,
-    percentage: Math.round((categoryScore / maxCategoryScore) * 100),
-    status: getStatus(categoryScore, maxCategoryScore),
-    details: `${place.types?.length || 0} categorias definidas`,
-  });
-
-  // TOTAL
-  const total = categories.reduce((sum, cat) => sum + cat.score, 0);
-
-  // Ordenar oportunidades por prioridade
-  const priorityOrder = { high: 0, medium: 1, low: 2 };
-  opportunities.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  // Estatísticas gerais
+  const criticalTotal = checkResults.filter(
+    (r) => r.guideline.importance === "critical"
+  ).length;
+  const criticalPassed = checkResults.filter(
+    (r) => r.passed && r.guideline.importance === "critical"
+  ).length;
 
   return {
     total,
-    categories,
+    grade,
+    categories: categoryScores,
+    criticalIssues,
     opportunities,
     strengths,
+    summary: {
+      totalChecks: checkResults.length,
+      passedChecks: checkResults.filter((r) => r.passed).length,
+      criticalPassed,
+      criticalTotal,
+    },
+  };
+}
+
+/**
+ * Avalia uma diretriz específica
+ */
+function evaluateGuideline(
+  guideline: GuidelineCheck,
+  place: PlaceDetails
+): CheckResult {
+  let passed = false;
+  let currentValue: string | undefined;
+
+  switch (guideline.id) {
+    // === INFORMAÇÕES ===
+    case "name_accurate":
+      // Verificar se nome não tem keywords stuffing (simplificado)
+      passed = place.name.length > 0 && place.name.length < 80;
+      currentValue = place.name;
+      break;
+
+    case "address_complete":
+      passed = !!place.address && place.address.length > 10;
+      currentValue = place.address || "Não informado";
+      break;
+
+    case "phone_local":
+      passed = !!place.phoneNumber;
+      currentValue = place.phoneNumber || "Não informado";
+      break;
+
+    case "hours_accurate":
+      passed = !!place.openingHours?.weekdayText;
+      currentValue = place.openingHours?.weekdayText
+        ? "Configurado"
+        : "Não configurado";
+      break;
+
+    case "category_primary":
+      passed = !!place.types && place.types.length > 0;
+      currentValue = place.types?.[0] || "Não definida";
+      break;
+
+    case "categories_secondary":
+      passed = !!place.types && place.types.length >= 2;
+      currentValue = `${place.types?.length || 0} categorias`;
+      break;
+
+    case "website_linked":
+      passed = !!place.website;
+      currentValue = place.website || "Não informado";
+      break;
+
+    case "description_complete":
+      // Não temos acesso à descrição via Places API
+      // Assumir como não verificado
+      passed = false;
+      currentValue = "Não verificável via API";
+      break;
+
+    // === FOTOS ===
+    case "photo_logo":
+    case "photo_cover":
+    case "photos_exterior":
+    case "photos_interior":
+      // Não conseguimos diferenciar tipos de foto via API
+      // Usar quantidade como proxy
+      passed = !!place.photos && place.photos >= 3;
+      currentValue = `${place.photos || 0} fotos no perfil`;
+      break;
+
+    case "photos_products":
+    case "photos_team":
+      passed = !!place.photos && place.photos >= 5;
+      currentValue = `${place.photos || 0} fotos no perfil`;
+      break;
+
+    case "photos_quantity":
+      passed = !!place.photos && place.photos >= 10;
+      currentValue = `${place.photos || 0} fotos`;
+      break;
+
+    case "photos_quality":
+      // Não verificável via API
+      passed = !!place.photos && place.photos > 0;
+      currentValue = "Não verificável via API";
+      break;
+
+    // === ENGAJAMENTO ===
+    case "reviews_respond":
+      // Não verificável via API se dono responde
+      passed = false;
+      currentValue = "Verificar manualmente no perfil";
+      break;
+
+    case "reviews_quantity":
+      passed = !!place.userRatingsTotal && place.userRatingsTotal >= 20;
+      currentValue = `${place.userRatingsTotal || 0} avaliações`;
+      break;
+
+    case "reviews_recent":
+      // Verificar se há reviews nos últimos 3 meses
+      if (place.reviews && place.reviews.length > 0) {
+        const threeMonthsAgo = Date.now() / 1000 - 90 * 24 * 60 * 60;
+        const recentCount = place.reviews.filter(
+          (r) => r.time > threeMonthsAgo
+        ).length;
+        passed = recentCount >= 2;
+        currentValue = `${recentCount} avaliações recentes (3 meses)`;
+      } else {
+        passed = false;
+        currentValue = "Sem avaliações recentes";
+      }
+      break;
+
+    case "reviews_rating":
+      passed = !!place.rating && place.rating >= 4.0;
+      currentValue = place.rating ? `${place.rating} estrelas` : "Sem avaliações";
+      break;
+
+    case "qna_active":
+      // Não verificável via Places API
+      passed = false;
+      currentValue = "Verificar manualmente no perfil";
+      break;
+
+    // === CONTEÚDO ===
+    case "posts_active":
+    case "products_services":
+    case "attributes_set":
+    case "menu_booking":
+      // Não verificável via Places API
+      passed = false;
+      currentValue = "Verificar manualmente no perfil";
+      break;
+
+    // === CONFIANÇA ===
+    case "verified":
+      // Assumir verificado se tem dados completos
+      passed =
+        !!place.phoneNumber &&
+        !!place.address &&
+        !!place.openingHours;
+      currentValue = passed ? "Provavelmente verificado" : "Verificar status";
+      break;
+
+    case "nap_consistency":
+      // Não verificável - precisaria comparar com outras fontes
+      passed = false;
+      currentValue = "Requer verificação manual em outras plataformas";
+      break;
+
+    default:
+      passed = false;
+      currentValue = "Não avaliado";
+  }
+
+  return {
+    guideline,
+    passed,
+    currentValue,
+    recommendation: passed ? undefined : guideline.howToFix,
   };
 }
 
 function getStatus(
-  score: number,
-  maxScore: number
+  percentage: number
 ): "excellent" | "good" | "average" | "poor" {
-  const percentage = (score / maxScore) * 100;
   if (percentage >= 80) return "excellent";
   if (percentage >= 60) return "good";
   if (percentage >= 40) return "average";
   return "poor";
+}
+
+function getGrade(score: number): "A" | "B" | "C" | "D" | "F" {
+  if (score >= 90) return "A";
+  if (score >= 80) return "B";
+  if (score >= 70) return "C";
+  if (score >= 60) return "D";
+  return "F";
 }
 
 /**
@@ -288,7 +371,7 @@ export function getScoreDescription(score: number): {
     return {
       label: "Excelente",
       description:
-        "Sua presença digital está ótima! Continue mantendo seu perfil atualizado.",
+        "Sua presença digital está muito boa! Seu perfil segue a maioria das diretrizes do Google. Continue mantendo-o atualizado.",
       color: "text-green-600",
     };
   }
@@ -296,7 +379,7 @@ export function getScoreDescription(score: number): {
     return {
       label: "Bom",
       description:
-        "Você está no caminho certo, mas há oportunidades de melhoria.",
+        "Você está no caminho certo, mas há oportunidades importantes de melhoria. Siga as recomendações para subir no ranking.",
       color: "text-blue-600",
     };
   }
@@ -304,14 +387,14 @@ export function getScoreDescription(score: number): {
     return {
       label: "Regular",
       description:
-        "Seu perfil precisa de atenção. Siga as recomendações para melhorar.",
+        "Seu perfil precisa de atenção. Existem problemas críticos que podem estar prejudicando sua visibilidade no Google.",
       color: "text-yellow-600",
     };
   }
   return {
     label: "Precisa Melhorar",
     description:
-      "Sua presença digital está fraca. Há muito potencial de crescimento!",
+      "Sua presença digital está fraca. Há muito potencial de crescimento! Comece pelos itens críticos.",
     color: "text-red-600",
   };
 }
