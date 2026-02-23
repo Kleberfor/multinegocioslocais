@@ -1,0 +1,114 @@
+// Prisma Schema — MultiNegócios Locais
+// Blueprint: BP-2026-02-22-001
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODELOS PRINCIPAIS
+// ═══════════════════════════════════════════════════════════════
+
+model Prospect {
+  id        String   @id @default(cuid())
+  placeId   String
+  nome      String
+  email     String?
+  telefone  String?
+  score     Int
+  analise   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([placeId])
+  @@index([createdAt])
+}
+
+model Cliente {
+  id        String     @id @default(cuid())
+  nome      String
+  email     String
+  telefone  String
+  cpfCnpj   String
+  negocio   String
+  endereco  Json?
+  planoId   String?
+  plano     Plano?     @relation(fields: [planoId], references: [id])
+  contratos Contrato[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([email])
+  @@index([cpfCnpj])
+}
+
+model Contrato {
+  id         String      @id @default(cuid())
+  clienteId  String
+  cliente    Cliente     @relation(fields: [clienteId], references: [id])
+  valor      Decimal     @db.Decimal(10, 2)
+  parcelas   Int
+  status     String      @default("PENDENTE") // PENDENTE, ASSINADO, PAGO, CANCELADO
+  pdfUrl     String?
+  assinadoEm DateTime?
+  pagamentos Pagamento[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([clienteId])
+  @@index([status])
+}
+
+model Pagamento {
+  id         String   @id @default(cuid())
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id])
+  valor      Decimal  @db.Decimal(10, 2)
+  parcela    Int      @default(1)
+  status     String   @default("PENDENTE") // PENDENTE, PROCESSANDO, PAGO, FALHOU
+  mpId       String?  // ID do Mercado Pago
+  nfeUrl     String?
+  nfeNumero  String?
+  paidAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([contratoId])
+  @@index([status])
+  @@index([mpId])
+}
+
+model Plano {
+  id          String    @id @default(cuid())
+  nome        String
+  descricao   String?
+  implantacao Decimal   @db.Decimal(10, 2)
+  mensalidade Decimal   @db.Decimal(10, 2)
+  parcelas    Int
+  ativo       Boolean   @default(true)
+  clientes    Cliente[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ativo])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTENTICAÇÃO ADMIN
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  role          String    @default("admin") // admin, viewer
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
