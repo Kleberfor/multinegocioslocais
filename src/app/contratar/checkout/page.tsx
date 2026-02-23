@@ -17,6 +17,8 @@ import {
   Barcode,
   Shield,
   Lock,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 
 interface ClienteData {
@@ -37,6 +39,19 @@ interface ClienteData {
 
 type PaymentMethod = "pix" | "credit_card" | "boleto";
 
+interface PixData {
+  qrCode: string;
+  qrCodeBase64: string;
+  ticketUrl: string;
+  pagamentoId: string;
+}
+
+interface BoletoData {
+  boletoUrl: string;
+  barcode: string;
+  pagamentoId: string;
+}
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,6 +61,10 @@ function CheckoutContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [pixData, setPixData] = useState<PixData | null>(null);
+  const [boletoData, setBoletoData] = useState<BoletoData | null>(null);
+  const [paymentGenerated, setPaymentGenerated] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Card form state
   const [cardNumber, setCardNumber] = useState("");
@@ -58,6 +77,27 @@ function CheckoutContent() {
       loadCliente();
     }
   }, [clienteId]);
+
+  // Polling para verificar status do pagamento PIX
+  useEffect(() => {
+    if (pixData?.pagamentoId) {
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch(`/api/payment/status/${pixData.pagamentoId}`);
+          const data = await response.json();
+
+          if (data.status === "PAGO") {
+            clearInterval(interval);
+            router.push(`/sucesso?cliente=${clienteId}`);
+          }
+        } catch (error) {
+          console.error("Erro ao verificar status:", error);
+        }
+      }, 5000); // Verificar a cada 5 segundos
+
+      return () => clearInterval(interval);
+    }
+  }, [pixData, clienteId, router]);
 
   const loadCliente = async () => {
     try {
@@ -74,36 +114,127 @@ function CheckoutContent() {
     }
   };
 
-  const handlePayment = async () => {
+  const handlePixPayment = async () => {
     setIsProcessing(true);
 
     try {
-      // Simular processamento de pagamento
-      // TODO: Integrar com Mercado Pago no E-4
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Criar pagamento no banco
-      const response = await fetch("/api/payment/process", {
+      const response = await fetch("/api/payment/pix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clienteId,
           contratoId: cliente?.contratos[0]?.id,
-          method: paymentMethod,
         }),
       });
 
-      if (response.ok) {
-        router.push(`/sucesso?cliente=${clienteId}`);
+      const data = await response.json();
+
+      if (response.ok && data.qrCode) {
+        setPixData({
+          qrCode: data.qrCode,
+          qrCodeBase64: data.qrCodeBase64,
+          ticketUrl: data.ticketUrl,
+          pagamentoId: data.pagamentoId,
+        });
+        setPaymentGenerated(true);
       } else {
-        alert("Erro ao processar pagamento. Tente novamente.");
+        alert(data.error || "Erro ao gerar PIX. Tente novamente.");
       }
     } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
+      console.error("Erro ao gerar PIX:", error);
+      alert("Erro ao gerar PIX. Tente novamente.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBoletoPayment = async () => {
+    setIsProcessing(true);
+
+    try {
+      const response = await fetch("/api/payment/boleto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clienteId,
+          contratoId: cliente?.contratos[0]?.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.boletoUrl) {
+        setBoletoData({
+          boletoUrl: data.boletoUrl,
+          barcode: data.barcode,
+          pagamentoId: data.pagamentoId,
+        });
+        setPaymentGenerated(true);
+      } else {
+        alert(data.error || "Erro ao gerar boleto. Tente novamente.");
+      }
+    } catch (error) {
+      console.error("Erro ao gerar boleto:", error);
+      alert("Erro ao gerar boleto. Tente novamente.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCardPayment = async () => {
+    setIsProcessing(true);
+
+    try {
+      // Para cartão, redirecionar para página de sucesso após processamento
+      // Em produção, usaria MercadoPago.js para tokenizar o cartão
+      const response = await fetch("/api/payment/card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clienteId,
+          contratoId: cliente?.contratos[0]?.id,
+          token: "TEST-TOKEN", // Em produção, seria o token do cartão
+          installments: cliente?.contratos[0]?.parcelas || 1,
+          paymentMethodId: "visa",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "approved") {
+        router.push(`/sucesso?cliente=${clienteId}`);
+      } else if (data.status === "in_process") {
+        alert("Pagamento em processamento. Você receberá uma confirmação por e-mail.");
+        router.push(`/sucesso?cliente=${clienteId}`);
+      } else {
+        alert(data.statusDetail || "Pagamento não aprovado. Verifique os dados do cartão.");
+      }
+    } catch (error) {
+      console.error("Erro ao processar cartão:", error);
       alert("Erro ao processar pagamento. Tente novamente.");
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handlePayment = async () => {
+    switch (paymentMethod) {
+      case "pix":
+        await handlePixPayment();
+        break;
+      case "boleto":
+        await handleBoletoPayment();
+        break;
+      case "credit_card":
+        await handleCardPayment();
+        break;
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const formatCardNumber = (value: string) => {
@@ -162,7 +293,9 @@ function CheckoutContent() {
           </Link>
           <h1 className="text-2xl font-bold">Pagamento</h1>
           <p className="text-muted-foreground mt-2">
-            Escolha a forma de pagamento para finalizar sua contratação
+            {paymentGenerated
+              ? "Complete o pagamento para finalizar"
+              : "Escolha a forma de pagamento para finalizar sua contratação"}
           </p>
         </div>
 
@@ -236,177 +369,310 @@ function CheckoutContent() {
 
           {/* Formas de pagamento */}
           <div className="lg:col-span-2 order-1 lg:order-2 space-y-6">
-            {/* Seleção de método */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Forma de Pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <button
-                    onClick={() => setPaymentMethod("pix")}
-                    className={`p-4 rounded-lg border-2 text-center transition-all ${
-                      paymentMethod === "pix"
-                        ? "border-primary bg-primary/5"
-                        : "border-muted hover:border-primary/50"
-                    }`}
-                  >
-                    <QrCode className="w-8 h-8 mx-auto mb-2" />
-                    <p className="font-medium">PIX</p>
-                    <p className="text-xs text-muted-foreground">
-                      Aprovação instantânea
-                    </p>
-                  </button>
+            {!paymentGenerated ? (
+              <>
+                {/* Seleção de método */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Forma de Pagamento</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <button
+                        onClick={() => setPaymentMethod("pix")}
+                        className={`p-4 rounded-lg border-2 text-center transition-all ${
+                          paymentMethod === "pix"
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                      >
+                        <QrCode className="w-8 h-8 mx-auto mb-2" />
+                        <p className="font-medium">PIX</p>
+                        <p className="text-xs text-muted-foreground">
+                          Aprovação instantânea
+                        </p>
+                      </button>
 
-                  <button
-                    onClick={() => setPaymentMethod("credit_card")}
-                    className={`p-4 rounded-lg border-2 text-center transition-all ${
-                      paymentMethod === "credit_card"
-                        ? "border-primary bg-primary/5"
-                        : "border-muted hover:border-primary/50"
-                    }`}
-                  >
-                    <CreditCard className="w-8 h-8 mx-auto mb-2" />
-                    <p className="font-medium">Cartão de Crédito</p>
-                    <p className="text-xs text-muted-foreground">
-                      Até {parcelas}x sem juros
-                    </p>
-                  </button>
+                      <button
+                        onClick={() => setPaymentMethod("credit_card")}
+                        className={`p-4 rounded-lg border-2 text-center transition-all ${
+                          paymentMethod === "credit_card"
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                      >
+                        <CreditCard className="w-8 h-8 mx-auto mb-2" />
+                        <p className="font-medium">Cartão de Crédito</p>
+                        <p className="text-xs text-muted-foreground">
+                          Até {parcelas}x sem juros
+                        </p>
+                      </button>
 
-                  <button
-                    onClick={() => setPaymentMethod("boleto")}
-                    className={`p-4 rounded-lg border-2 text-center transition-all ${
-                      paymentMethod === "boleto"
-                        ? "border-primary bg-primary/5"
-                        : "border-muted hover:border-primary/50"
-                    }`}
+                      <button
+                        onClick={() => setPaymentMethod("boleto")}
+                        className={`p-4 rounded-lg border-2 text-center transition-all ${
+                          paymentMethod === "boleto"
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                      >
+                        <Barcode className="w-8 h-8 mx-auto mb-2" />
+                        <p className="font-medium">Boleto</p>
+                        <p className="text-xs text-muted-foreground">
+                          Vencimento em 3 dias
+                        </p>
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Detalhes do pagamento */}
+                <Card>
+                  <CardContent className="pt-6">
+                    {paymentMethod === "pix" && (
+                      <div className="text-center py-8">
+                        <QrCode className="w-24 h-24 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-lg font-medium mb-2">
+                          Pague instantaneamente com PIX
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Após gerar o código, escaneie com o app do seu banco
+                        </p>
+                      </div>
+                    )}
+
+                    {paymentMethod === "credit_card" && (
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="cardNumber">Número do Cartão</Label>
+                          <Input
+                            id="cardNumber"
+                            value={cardNumber}
+                            onChange={(e) =>
+                              setCardNumber(formatCardNumber(e.target.value))
+                            }
+                            placeholder="0000 0000 0000 0000"
+                            maxLength={19}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cardName">Nome no Cartão</Label>
+                          <Input
+                            id="cardName"
+                            value={cardName}
+                            onChange={(e) =>
+                              setCardName(e.target.value.toUpperCase())
+                            }
+                            placeholder="NOME COMO NO CARTÃO"
+                          />
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <Label htmlFor="cardExpiry">Validade</Label>
+                            <Input
+                              id="cardExpiry"
+                              value={cardExpiry}
+                              onChange={(e) =>
+                                setCardExpiry(formatExpiry(e.target.value))
+                              }
+                              placeholder="MM/AA"
+                              maxLength={5}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="cardCvv">CVV</Label>
+                            <Input
+                              id="cardCvv"
+                              value={cardCvv}
+                              onChange={(e) =>
+                                setCardCvv(e.target.value.replace(/\D/g, ""))
+                              }
+                              placeholder="000"
+                              maxLength={4}
+                              type="password"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Parcelamento em {parcelas}x de R${" "}
+                          {valorParcela.toLocaleString("pt-BR")} sem juros
+                        </p>
+                      </div>
+                    )}
+
+                    {paymentMethod === "boleto" && (
+                      <div className="text-center py-8">
+                        <Barcode className="w-24 h-24 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-lg font-medium mb-2">
+                          Pague com Boleto Bancário
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Vencimento em 3 dias úteis. Acesso liberado após confirmação.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Botões */}
+                <div className="flex justify-between">
+                  <Link href={`/contratar/contrato?cliente=${clienteId}`}>
+                    <Button type="button" variant="outline">
+                      Voltar
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={handlePayment}
+                    disabled={isProcessing}
+                    size="lg"
                   >
-                    <Barcode className="w-8 h-8 mx-auto mb-2" />
-                    <p className="font-medium">Boleto</p>
-                    <p className="text-xs text-muted-foreground">
-                      Vencimento em 3 dias
-                    </p>
-                  </button>
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        {paymentMethod === "pix" && "Gerar QR Code PIX"}
+                        {paymentMethod === "credit_card" && "Pagar com Cartão"}
+                        {paymentMethod === "boleto" && "Gerar Boleto"}
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Detalhes do pagamento */}
-            <Card>
-              <CardContent className="pt-6">
-                {paymentMethod === "pix" && (
-                  <div className="text-center py-8">
-                    <QrCode className="w-32 h-32 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-lg font-medium mb-2">
-                      QR Code PIX será gerado após confirmar
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Escaneie o código com o app do seu banco para pagar
-                      instantaneamente
-                    </p>
-                  </div>
-                )}
-
-                {paymentMethod === "credit_card" && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="cardNumber">Número do Cartão</Label>
-                      <Input
-                        id="cardNumber"
-                        value={cardNumber}
-                        onChange={(e) =>
-                          setCardNumber(formatCardNumber(e.target.value))
-                        }
-                        placeholder="0000 0000 0000 0000"
-                        maxLength={19}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cardName">Nome no Cartão</Label>
-                      <Input
-                        id="cardName"
-                        value={cardName}
-                        onChange={(e) =>
-                          setCardName(e.target.value.toUpperCase())
-                        }
-                        placeholder="NOME COMO NO CARTÃO"
-                      />
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <Label htmlFor="cardExpiry">Validade</Label>
-                        <Input
-                          id="cardExpiry"
-                          value={cardExpiry}
-                          onChange={(e) =>
-                            setCardExpiry(formatExpiry(e.target.value))
-                          }
-                          placeholder="MM/AA"
-                          maxLength={5}
-                        />
+              </>
+            ) : (
+              <>
+                {/* PIX Gerado */}
+                {pixData && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center">
+                        <QrCode className="w-5 h-5 mr-2" />
+                        Pague com PIX
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="text-center">
+                        {pixData.qrCodeBase64 ? (
+                          <img
+                            src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                            alt="QR Code PIX"
+                            className="w-64 h-64 mx-auto border rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-64 h-64 mx-auto border rounded-lg flex items-center justify-center bg-muted">
+                            <QrCode className="w-32 h-32 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
+
                       <div>
-                        <Label htmlFor="cardCvv">CVV</Label>
-                        <Input
-                          id="cardCvv"
-                          value={cardCvv}
-                          onChange={(e) =>
-                            setCardCvv(e.target.value.replace(/\D/g, ""))
-                          }
-                          placeholder="000"
-                          maxLength={4}
-                          type="password"
-                        />
+                        <Label>Código PIX (Copia e Cola)</Label>
+                        <div className="flex mt-2">
+                          <Input
+                            value={pixData.qrCode}
+                            readOnly
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            variant="outline"
+                            className="ml-2"
+                            onClick={() => copyToClipboard(pixData.qrCode)}
+                          >
+                            {copied ? (
+                              <CheckCircle className="w-4 h-4" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Parcelamento em {parcelas}x de R${" "}
-                      {valorParcela.toLocaleString("pt-BR")} sem juros
-                    </p>
-                  </div>
+
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Aguardando pagamento...</strong>
+                          <br />
+                          Após o pagamento, você será redirecionado automaticamente.
+                        </p>
+                      </div>
+
+                      <div className="flex justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
 
-                {paymentMethod === "boleto" && (
-                  <div className="text-center py-8">
-                    <Barcode className="w-32 h-32 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-lg font-medium mb-2">
-                      Boleto será gerado após confirmar
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Vencimento em 3 dias úteis. O acesso será liberado após
-                      confirmação do pagamento (até 3 dias úteis).
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                {/* Boleto Gerado */}
+                {boletoData && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center">
+                        <Barcode className="w-5 h-5 mr-2" />
+                        Boleto Gerado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                        <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-2" />
+                        <p className="text-green-800 font-medium">
+                          Boleto gerado com sucesso!
+                        </p>
+                      </div>
 
-            {/* Botões */}
-            <div className="flex justify-between">
-              <Link href={`/contratar/contrato?cliente=${clienteId}`}>
-                <Button type="button" variant="outline">
-                  Voltar
-                </Button>
-              </Link>
-              <Button
-                onClick={handlePayment}
-                disabled={isProcessing}
-                size="lg"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  <>
-                    {paymentMethod === "pix" && "Gerar QR Code PIX"}
-                    {paymentMethod === "credit_card" && "Pagar com Cartão"}
-                    {paymentMethod === "boleto" && "Gerar Boleto"}
-                  </>
+                      {boletoData.barcode && (
+                        <div>
+                          <Label>Código de Barras</Label>
+                          <div className="flex mt-2">
+                            <Input
+                              value={boletoData.barcode}
+                              readOnly
+                              className="font-mono text-xs"
+                            />
+                            <Button
+                              variant="outline"
+                              className="ml-2"
+                              onClick={() => copyToClipboard(boletoData.barcode)}
+                            >
+                              {copied ? (
+                                <CheckCircle className="w-4 h-4" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-4">
+                        <a
+                          href={boletoData.boletoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button className="w-full" size="lg">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Abrir Boleto
+                          </Button>
+                        </a>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push(`/sucesso?cliente=${clienteId}`)}
+                        >
+                          Continuar
+                        </Button>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground text-center">
+                        O acesso será liberado após confirmação do pagamento (até 3 dias úteis).
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
-              </Button>
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
