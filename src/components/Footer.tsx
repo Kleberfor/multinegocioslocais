@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -7,10 +8,14 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-primary">
-                MultiNegócios<span className="text-foreground">Locais</span>
-              </span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="MultiNegócios Locais"
+                width={160}
+                height={36}
+                className="h-9 w-auto"
+              />
             </Link>
             <p className="mt-4 text-sm text-muted-foreground max-w-md">
               Ajudamos negócios locais a melhorar sua presença digital e atrair

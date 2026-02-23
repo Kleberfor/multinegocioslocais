@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 export function CTASection() {
@@ -6,6 +7,16 @@ export function CTASection() {
     <section className="py-20 bg-primary text-primary-foreground">
       <div className="container">
         <div className="mx-auto max-w-3xl text-center">
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/logo-white.png"
+              alt="MultiNegócios Locais"
+              width={200}
+              height={45}
+              className="h-12 w-auto"
+            />
+          </div>
+
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Pronto para descobrir seu score?
           </h2>
