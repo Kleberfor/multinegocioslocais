@@ -40,23 +40,44 @@ export async function POST(request: NextRequest) {
     });
 
     if (leadExistente) {
-      // Se o lead existente não tem siteUrl mas o novo request tem, atualizar
+      // Normalizar novo siteUrl
       const novoSiteUrl = siteUrl && siteUrl.trim() !== '' ? siteUrl.trim() : null;
-      const siteUrlMudou = !leadExistente.siteUrl && novoSiteUrl;
 
-      if (siteUrlMudou) {
-        // Refazer análise com o novo site URL
+      // Condições para refazer a análise:
+      // 1. Lead não tinha siteUrl e agora tem
+      // 2. Lead tinha siteUrl mas scoreSite é 0 (análise falhou antes)
+      // 3. siteUrl mudou
+      const siteUrlMudou = !leadExistente.siteUrl && novoSiteUrl;
+      const analiseDoSiteFalhou = leadExistente.siteUrl && leadExistente.scoreSite === 0;
+      const siteUrlDiferente = novoSiteUrl && leadExistente.siteUrl !== novoSiteUrl;
+
+      const deveRefazerAnalise = siteUrlMudou || analiseDoSiteFalhou || siteUrlDiferente;
+
+      if (deveRefazerAnalise) {
+        console.log('[leads] Refazendo análise - motivo:', {
+          siteUrlMudou,
+          analiseDoSiteFalhou,
+          siteUrlDiferente,
+          siteUrlAntigo: leadExistente.siteUrl,
+          siteUrlNovo: novoSiteUrl,
+        });
+        // Usar o siteUrl do request ou manter o existente
+        const siteUrlParaAnalise = novoSiteUrl || leadExistente.siteUrl;
+
+        // Refazer análise com o site URL
         const analiseAtualizada = await realizarAnaliseCombinada(
           placeId,
-          novoSiteUrl,
+          siteUrlParaAnalise,
           segmento
         );
+
+        console.log('[leads] Nova análise do site - scoreSite:', analiseAtualizada.analisePublica.scoreSite);
 
         // Atualizar lead com nova análise
         const leadAtualizado = await prisma.lead.update({
           where: { id: leadExistente.id },
           data: {
-            siteUrl: novoSiteUrl,
+            siteUrl: siteUrlParaAnalise,
             scoreGeral: analiseAtualizada.analisePublica.scoreGeral,
             scoreGBP: analiseAtualizada.analisePublica.scoreGBP,
             scoreSite: analiseAtualizada.analisePublica.scoreSite,
