@@ -89,11 +89,11 @@ async function getStats() {
     // Últimos 7 dias
     prisma.$queryRaw`
       SELECT
-        DATE(pesquisa_em) as date,
+        DATE("pesquisaEm") as date,
         COUNT(*) as count
       FROM "Lead"
-      WHERE pesquisa_em >= NOW() - INTERVAL '7 days'
-      GROUP BY DATE(pesquisa_em)
+      WHERE "pesquisaEm" >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE("pesquisaEm")
       ORDER BY date ASC
     ` as Promise<{ date: Date; count: bigint }[]>,
   ]);
