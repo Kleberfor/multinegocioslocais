@@ -4,8 +4,26 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { CreditCard, CheckCircle, Clock, XCircle } from "lucide-react";
 
-async function getPagamentos() {
-  return prisma.pagamento.findMany({
+type PagamentoWithContrato = {
+  id: string;
+  valor: any;
+  parcela: number;
+  status: string;
+  mpId: string | null;
+  paidAt: Date | null;
+  createdAt: Date;
+  contrato: {
+    id: string;
+    parcelas: number;
+    cliente: {
+      nome: string;
+      negocio: string;
+    };
+  };
+};
+
+async function getPagamentos(): Promise<PagamentoWithContrato[]> {
+  const pagamentos = await prisma.pagamento.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       contrato: {
@@ -15,6 +33,7 @@ async function getPagamentos() {
       },
     },
   });
+  return pagamentos as PagamentoWithContrato[];
 }
 
 export default async function PagamentosPage() {

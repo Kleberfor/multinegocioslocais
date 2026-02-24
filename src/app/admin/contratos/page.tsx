@@ -5,8 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-async function getContratos() {
-  return prisma.contrato.findMany({
+type ContratoWithCliente = {
+  id: string;
+  valor: any;
+  parcelas: number;
+  status: string;
+  createdAt: Date;
+  cliente: {
+    nome: string;
+    negocio: string;
+  };
+};
+
+async function getContratos(): Promise<ContratoWithCliente[]> {
+  const contratos = await prisma.contrato.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       cliente: true,
@@ -16,6 +28,7 @@ async function getContratos() {
       },
     },
   });
+  return contratos as ContratoWithCliente[];
 }
 
 export default async function ContratosPage() {

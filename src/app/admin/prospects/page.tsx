@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
 
-async function getProspects() {
-  return prisma.prospect.findMany({
+type Prospect = {
+  id: string;
+  nome: string;
+  email: string | null;
+  score: number;
+  createdAt: Date;
+};
+
+async function getProspects(): Promise<Prospect[]> {
+  const prospects = await prisma.prospect.findMany({
     orderBy: { createdAt: "desc" },
   });
+  return prospects as Prospect[];
 }
 
 export default async function ProspectsPage() {

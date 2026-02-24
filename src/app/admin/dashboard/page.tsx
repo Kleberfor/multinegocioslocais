@@ -12,7 +12,31 @@ import {
   Clock,
 } from "lucide-react";
 
-async function getStats() {
+type RecentProspect = {
+  id: string;
+  nome: string;
+  score: number;
+};
+
+type RecentCliente = {
+  id: string;
+  nome: string;
+  negocio: string;
+  contratos: { status: string }[];
+};
+
+type Stats = {
+  totalProspects: number;
+  totalClientes: number;
+  totalContratos: number;
+  contratosAssinados: number;
+  contratosPagos: number;
+  totalFaturamento: number;
+  recentProspects: RecentProspect[];
+  recentClientes: RecentCliente[];
+};
+
+async function getStats(): Promise<Stats> {
   const [
     totalProspects,
     totalClientes,
@@ -50,8 +74,8 @@ async function getStats() {
     contratosAssinados,
     contratosPagos,
     totalFaturamento: Number(totalFaturamento._sum.valor || 0),
-    recentProspects,
-    recentClientes,
+    recentProspects: recentProspects as RecentProspect[],
+    recentClientes: recentClientes as RecentCliente[],
   };
 }
 
