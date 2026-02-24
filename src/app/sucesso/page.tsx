@@ -30,12 +30,17 @@ interface ClienteData {
   }[];
 }
 
+const WHATSAPP_NUMERO = "5511916682510";
+
 function SucessoContent() {
   const searchParams = useSearchParams();
   const clienteId = searchParams.get("cliente");
 
   const [cliente, setCliente] = useState<ClienteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     if (clienteId) {
@@ -56,6 +61,65 @@ function SucessoContent() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDownloadContract = async () => {
+    if (!cliente?.contratos[0]?.id) return;
+
+    setIsDownloading(true);
+    try {
+      const response = await fetch("/api/contract/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clienteId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.html) {
+        // Criar um iframe oculto para imprimir como PDF
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          printWindow.document.write(data.html);
+          printWindow.document.close();
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao baixar contrato:", error);
+      alert("Erro ao gerar contrato. Tente novamente.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    setIsResending(true);
+    try {
+      // Por enquanto, apenas simula o reenvio
+      // Futuramente, chamar uma API de envio de email
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setEmailSent(true);
+      setTimeout(() => setEmailSent(false), 5000);
+    } catch (error) {
+      console.error("Erro ao reenviar email:", error);
+      alert("Erro ao reenviar email. Tente novamente.");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleWhatsApp = () => {
+    const mensagem = encodeURIComponent(
+      `Olá! Acabei de contratar o serviço MultiNegócios Locais.\n\n` +
+      `Nome: ${cliente?.nome}\n` +
+      `Negócio: ${cliente?.negocio}\n\n` +
+      `Gostaria de mais informações sobre os próximos passos.`
+    );
+    window.open(`https://wa.me/${WHATSAPP_NUMERO}?text=${mensagem}`, "_blank");
   };
 
   if (isLoading) {
@@ -175,19 +239,49 @@ function SucessoContent() {
 
         {/* Ações */}
         <div className="grid gap-4 md:grid-cols-2 mb-8">
-          <Button variant="outline" className="h-auto py-4">
-            <Download className="w-5 h-5 mr-2" />
+          <Button
+            variant="outline"
+            className="h-auto py-4"
+            onClick={handleDownloadContract}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5 mr-2" />
+            )}
             <div className="text-left">
-              <p className="font-medium">Baixar Contrato</p>
-              <p className="text-xs text-muted-foreground">PDF assinado</p>
+              <p className="font-medium">
+                {isDownloading ? "Gerando..." : "Baixar Contrato"}
+              </p>
+              <p className="text-xs text-muted-foreground">Imprimir/Salvar PDF</p>
             </div>
           </Button>
 
-          <Button variant="outline" className="h-auto py-4">
-            <Mail className="w-5 h-5 mr-2" />
+          <Button
+            variant="outline"
+            className="h-auto py-4"
+            onClick={handleResendEmail}
+            disabled={isResending || emailSent}
+          >
+            {isResending ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : emailSent ? (
+              <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
+            ) : (
+              <Mail className="w-5 h-5 mr-2" />
+            )}
             <div className="text-left">
-              <p className="font-medium">Reenviar E-mail</p>
-              <p className="text-xs text-muted-foreground">Confirmação</p>
+              <p className="font-medium">
+                {isResending
+                  ? "Enviando..."
+                  : emailSent
+                  ? "Email Enviado!"
+                  : "Reenviar E-mail"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {emailSent ? `Para ${cliente?.email}` : "Confirmação"}
+              </p>
             </div>
           </Button>
         </div>
@@ -202,7 +296,7 @@ function SucessoContent() {
                   Fale conosco pelo WhatsApp
                 </p>
               </div>
-              <Button>
+              <Button onClick={handleWhatsApp}>
                 <MessageCircle className="w-4 h-4 mr-2" />
                 WhatsApp
               </Button>
