@@ -1,6 +1,13 @@
 // Geração de Contrato
 // S-3.2: Template e geração de contrato
 
+// Dados da empresa contratada (via variáveis de ambiente)
+const EMPRESA = {
+  razaoSocial: process.env.EMPRESA_RAZAO_SOCIAL || "MultiNegócios Locais Ltda",
+  cnpj: process.env.EMPRESA_CNPJ || "00.000.000/0001-00",
+  endereco: process.env.EMPRESA_ENDERECO || "São Paulo/SP",
+};
+
 export interface ContractData {
   // Contratante
   clienteNome: string;
@@ -125,7 +132,7 @@ export function generateContractHTML(data: ContractData): string {
   <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE<br>MARKETING DIGITAL E GESTÃO DE PRESENÇA ONLINE</h1>
 
   <div class="parties">
-    <p><strong>CONTRATADA:</strong> MULTINEGÓCIOS LOCAIS LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº XX.XXX.XXX/0001-XX, com sede na cidade de São Paulo/SP, neste ato representada por seu representante legal, doravante denominada simplesmente <strong>CONTRATADA</strong>.</p>
+    <p><strong>CONTRATADA:</strong> ${EMPRESA.razaoSocial.toUpperCase()}, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${EMPRESA.cnpj}, com sede em ${EMPRESA.endereco}, neste ato representada por seu representante legal, doravante denominada simplesmente <strong>CONTRATADA</strong>.</p>
 
     <p><strong>CONTRATANTE:</strong> ${data.clienteNome}, inscrito(a) no CPF/CNPJ sob o nº ${data.clienteCpfCnpj}, residente/estabelecido(a) em ${data.clienteEndereco}, e-mail ${data.clienteEmail}, telefone ${data.clienteTelefone}, proprietário(a) do estabelecimento comercial denominado "${data.negocioNome}", doravante denominado(a) simplesmente <strong>CONTRATANTE</strong>.</p>
   </div>
@@ -196,7 +203,7 @@ export function generateContractHTML(data: ContractData): string {
     <div class="signature-box">
       <div class="signature-line">
         <strong>CONTRATADA</strong><br>
-        MultiNegócios Locais Ltda.
+        ${EMPRESA.razaoSocial}
       </div>
     </div>
     <div class="signature-box">

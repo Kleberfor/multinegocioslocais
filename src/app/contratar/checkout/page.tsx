@@ -600,6 +600,48 @@ function CheckoutContent() {
                       <div className="flex justify-center">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />
                       </div>
+
+                      {/* Botões de ação */}
+                      <div className="flex flex-col gap-3 pt-4 border-t">
+                        {/* Botão Simular Pagamento - só em modo teste */}
+                        {process.env.NEXT_PUBLIC_TEST_MODE === "true" && (
+                          <Button
+                            onClick={async () => {
+                              setIsProcessing(true);
+                              try {
+                                // Simular aprovação do pagamento
+                                const response = await fetch("/api/payment/simulate", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ pagamentoId: pixData.pagamentoId }),
+                                });
+                                if (response.ok) {
+                                  router.push(`/sucesso?cliente=${clienteId}`);
+                                }
+                              } catch (error) {
+                                console.error("Erro ao simular:", error);
+                              } finally {
+                                setIsProcessing(false);
+                              }
+                            }}
+                            disabled={isProcessing}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Simular Pagamento Aprovado (Teste)
+                          </Button>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setPaymentGenerated(false);
+                            setPixData(null);
+                          }}
+                        >
+                          Voltar e escolher outra forma de pagamento
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -657,11 +699,42 @@ function CheckoutContent() {
                           </Button>
                         </a>
 
+                        {/* Botão Simular Pagamento - só em modo teste */}
+                        {process.env.NEXT_PUBLIC_TEST_MODE === "true" && (
+                          <Button
+                            onClick={async () => {
+                              setIsProcessing(true);
+                              try {
+                                const response = await fetch("/api/payment/simulate", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ pagamentoId: boletoData.pagamentoId }),
+                                });
+                                if (response.ok) {
+                                  router.push(`/sucesso?cliente=${clienteId}`);
+                                }
+                              } catch (error) {
+                                console.error("Erro ao simular:", error);
+                              } finally {
+                                setIsProcessing(false);
+                              }
+                            }}
+                            disabled={isProcessing}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Simular Pagamento Aprovado (Teste)
+                          </Button>
+                        )}
+
                         <Button
                           variant="outline"
-                          onClick={() => router.push(`/sucesso?cliente=${clienteId}`)}
+                          onClick={() => {
+                            setPaymentGenerated(false);
+                            setBoletoData(null);
+                          }}
                         >
-                          Continuar
+                          Voltar e escolher outra forma de pagamento
                         </Button>
                       </div>
 
