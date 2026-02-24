@@ -40,7 +40,43 @@ export async function POST(request: NextRequest) {
     });
 
     if (leadExistente) {
-      // Mesmo usuário analisando o mesmo negócio - retornar análise existente
+      // Se o lead existente não tem siteUrl mas o novo request tem, atualizar
+      const novoSiteUrl = siteUrl && siteUrl.trim() !== '' ? siteUrl.trim() : null;
+      const siteUrlMudou = !leadExistente.siteUrl && novoSiteUrl;
+
+      if (siteUrlMudou) {
+        // Refazer análise com o novo site URL
+        const analiseAtualizada = await realizarAnaliseCombinada(
+          placeId,
+          novoSiteUrl,
+          segmento
+        );
+
+        // Atualizar lead com nova análise
+        const leadAtualizado = await prisma.lead.update({
+          where: { id: leadExistente.id },
+          data: {
+            siteUrl: novoSiteUrl,
+            scoreGeral: analiseAtualizada.analisePublica.scoreGeral,
+            scoreGBP: analiseAtualizada.analisePublica.scoreGBP,
+            scoreSite: analiseAtualizada.analisePublica.scoreSite,
+            scoreRedes: analiseAtualizada.analisePublica.scoreRedes,
+            analiseCompleta: JSON.parse(JSON.stringify(analiseAtualizada)),
+            argumentosFechamento: JSON.parse(JSON.stringify(analiseAtualizada.argumentosFechamento)),
+            planoAcao: JSON.parse(JSON.stringify(analiseAtualizada.planoAcao)),
+            proposta: JSON.parse(JSON.stringify(analiseAtualizada.proposta)),
+            valorSugerido: analiseAtualizada.proposta.valorImplantacao,
+          },
+        });
+
+        return NextResponse.json({
+          id: leadAtualizado.id,
+          analisePublica: analiseAtualizada.analisePublica,
+          mensagem: "Análise atualizada com dados do site",
+        });
+      }
+
+      // Mesmo usuário analisando o mesmo negócio sem mudança no site - retornar análise existente
       return NextResponse.json({
         id: leadExistente.id,
         analisePublica: {
@@ -53,10 +89,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Normalizar siteUrl (remover espaços, garantir que não seja string vazia)
+    const siteUrlNormalizado = siteUrl && siteUrl.trim() !== '' ? siteUrl.trim() : null;
+
     // Realizar análise combinada (novo negócio ou novo usuário)
     const analiseCompleta = await realizarAnaliseCombinada(
       placeId,
-      siteUrl || null,
+      siteUrlNormalizado,
       segmento
     );
 
@@ -68,7 +107,7 @@ export async function POST(request: NextRequest) {
         telefone,
         whatsapp,
         negocio,
-        siteUrl,
+        siteUrl: siteUrlNormalizado,
         segmento,
         placeId,
         enderecoGoogle: analiseCompleta.dadosGBP.endereco,
