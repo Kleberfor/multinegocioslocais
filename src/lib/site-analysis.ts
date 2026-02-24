@@ -63,35 +63,14 @@ const THRESHOLDS = {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Verifica se uma URL é válida e acessível
+ * Normaliza uma URL adicionando protocolo se necessário
  */
-async function verificarUrl(url: string): Promise<{ valido: boolean; urlFinal: string }> {
-  try {
-    // Garantir que tem protocolo
-    let urlNormalizada = url;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      urlNormalizada = 'https://' + url;
-    }
-
-    const response = await fetch(urlNormalizada, {
-      method: 'HEAD',
-      redirect: 'follow',
-    });
-
-    return {
-      valido: response.ok,
-      urlFinal: response.url || urlNormalizada,
-    };
-  } catch {
-    // Tentar com http se https falhar
-    try {
-      const urlHttp = url.replace('https://', 'http://');
-      const response = await fetch(urlHttp, { method: 'HEAD' });
-      return { valido: response.ok, urlFinal: urlHttp };
-    } catch {
-      return { valido: false, urlFinal: url };
-    }
+function normalizarUrl(url: string): string {
+  let urlNormalizada = url.trim();
+  if (!urlNormalizada.startsWith('http://') && !urlNormalizada.startsWith('https://')) {
+    urlNormalizada = 'https://' + urlNormalizada;
   }
+  return urlNormalizada;
 }
 
 /**
@@ -99,6 +78,9 @@ async function verificarUrl(url: string): Promise<{ valido: boolean; urlFinal: s
  */
 async function analisarComPageSpeed(url: string): Promise<any> {
   const apiKey = process.env.GOOGLE_PAGESPEED_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
+
+  console.log('[PageSpeed] Analisando URL:', url);
+  console.log('[PageSpeed] API Key presente:', !!apiKey);
 
   const params = new URLSearchParams();
   params.append('url', url);
@@ -112,13 +94,21 @@ async function analisarComPageSpeed(url: string): Promise<any> {
     params.append('key', apiKey);
   }
 
-  const response = await fetch(`${PAGESPEED_API_URL}?${params}`);
+  const fullUrl = `${PAGESPEED_API_URL}?${params}`;
+  console.log('[PageSpeed] Request URL:', fullUrl.replace(apiKey || '', '***'));
+
+  const response = await fetch(fullUrl);
 
   if (!response.ok) {
-    throw new Error(`PageSpeed API error: ${response.status}`);
+    const errorText = await response.text();
+    console.error('[PageSpeed] Erro:', response.status, errorText);
+    throw new Error(`PageSpeed API error: ${response.status} - ${errorText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log('[PageSpeed] Score recebido:', data.lighthouseResult?.categories?.performance?.score);
+
+  return data;
 }
 
 /**
@@ -279,8 +269,11 @@ function calcularScoreGeral(data: any): number {
  * Analisa um site e retorna diagnóstico completo
  */
 export async function analisarSite(url: string): Promise<SiteAnalysis> {
+  console.log('[analisarSite] URL recebida:', url);
+
   // Se não tem URL, retorna análise vazia
   if (!url || url.trim() === '') {
+    console.log('[analisarSite] URL vazia, retornando análise sem site');
     return {
       url: '',
       score: 0,
@@ -311,40 +304,11 @@ export async function analisarSite(url: string): Promise<SiteAnalysis> {
   }
 
   try {
-    // Verificar se URL é acessível
-    const { valido, urlFinal } = await verificarUrl(url);
+    // Normalizar URL (adicionar https:// se necessário)
+    const urlFinal = normalizarUrl(url);
+    console.log('[analisarSite] URL normalizada:', urlFinal);
 
-    if (!valido) {
-      return {
-        url: url,
-        score: 0,
-        temSite: false,
-        performance: {
-          score: 0,
-          lcp: 0,
-          fid: 0,
-          cls: 0,
-          fcp: 0,
-          ttfb: 0,
-        },
-        accessibility: 0,
-        bestPractices: 0,
-        seo: 0,
-        diagnostico: [{
-          categoria: 'performance',
-          severidade: 'critico',
-          titulo: 'Site inacessível',
-          descricao: `Não foi possível acessar ${url}`,
-          impacto: 'Clientes não conseguem ver informações da empresa',
-          comoResolver: 'Verificar se o domínio está ativo e a hospedagem funcionando',
-        }],
-        isHttps: false,
-        isMobileFriendly: false,
-        isIndexed: false,
-      };
-    }
-
-    // Analisar com PageSpeed Insights
+    // Analisar com PageSpeed Insights (direto, sem verificação prévia)
     const pageSpeedData = await analisarComPageSpeed(urlFinal);
 
     const categories = pageSpeedData.lighthouseResult?.categories || {};
@@ -364,12 +328,16 @@ export async function analisarSite(url: string): Promise<SiteAnalysis> {
     };
 
   } catch (error) {
-    console.error('Erro ao analisar site:', error);
+    console.error('[analisarSite] Erro ao analisar site:', url, error);
+
+    // Verificar se é erro de URL inválida vs erro de API
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isUrlError = errorMessage.includes('Invalid URL') || errorMessage.includes('fetch failed');
 
     return {
       url: url,
       score: 0,
-      temSite: true, // Assumimos que tem, mas não conseguimos analisar
+      temSite: !isUrlError, // Se for erro de URL, não tem site válido
       performance: {
         score: 0,
         lcp: 0,
@@ -384,10 +352,16 @@ export async function analisarSite(url: string): Promise<SiteAnalysis> {
       diagnostico: [{
         categoria: 'performance',
         severidade: 'moderado',
-        titulo: 'Análise incompleta',
-        descricao: 'Não foi possível completar a análise do site',
-        impacto: 'Recomendamos uma análise manual',
-        comoResolver: 'Tentar novamente ou realizar análise manual',
+        titulo: isUrlError ? 'Site inacessível' : 'Análise incompleta',
+        descricao: isUrlError
+          ? `Não foi possível acessar ${url}. Verifique se o endereço está correto.`
+          : 'Não foi possível completar a análise do site',
+        impacto: isUrlError
+          ? 'Clientes não conseguem acessar seu site'
+          : 'Recomendamos uma análise manual',
+        comoResolver: isUrlError
+          ? 'Verificar se o domínio está ativo e acessível'
+          : 'Tentar novamente ou realizar análise manual',
       }],
       isHttps: url.startsWith('https://'),
       isMobileFriendly: false,
