@@ -263,25 +263,6 @@ export default async function FollowUpPage() {
         </CardContent>
       </Card>
 
-      {/* Instruções de Cron */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">Processamento Automático</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          <p>
-            Para processar os follow-ups automaticamente, configure um cron job para chamar:
-          </p>
-          <code className="block mt-2 p-2 bg-muted rounded text-xs">
-            POST /api/followup/process
-            <br />
-            Authorization: Bearer {"{CRON_SECRET}"}
-          </code>
-          <p className="mt-2">
-            Recomendação: executar a cada 15 minutos durante horário comercial (8h-18h).
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
