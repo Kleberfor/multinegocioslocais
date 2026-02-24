@@ -28,6 +28,70 @@ model Prospect {
   @@index([createdAt])
 }
 
+// ═══════════════════════════════════════════════════════════════
+// LEADS (Captura de dados + Análise interna)
+// ═══════════════════════════════════════════════════════════════
+
+model Lead {
+  id              String    @id @default(cuid())
+
+  // Dados de contato
+  nome            String
+  email           String
+  telefone        String
+  whatsapp        String?
+  negocio         String              // Nome do negócio
+  siteUrl         String?             // URL do site (se tiver)
+  segmento        String              // Categoria do negócio
+
+  // Dados do Google Business
+  placeId         String?             // ID do Google Places
+  enderecoGoogle  String?
+
+  // Scores (visíveis para o cliente)
+  scoreGeral      Int?
+  scoreGBP        Int?
+  scoreSite       Int?
+  scoreRedes      Int?
+
+  // Análise detalhada (INTERNO - não mostra para cliente)
+  analiseCompleta Json?               // Diagnóstico detalhado completo
+  argumentosFechamento Json?          // Lista de argumentos de venda
+  planoAcao       Json?               // Plano de ação sugerido
+
+  // Proposta gerada pelo agente
+  proposta        Json?               // Proposta de precificação
+  valorSugerido   Decimal?  @db.Decimal(10, 2)
+
+  // Status do lead
+  status          String    @default("NOVO") // NOVO, CONTATADO, NEGOCIANDO, CONVERTIDO, PERDIDO
+  motivoPerda     String?             // Se perdido, qual o motivo
+  observacoes     String?             // Notas internas
+
+  // Conversão
+  convertido      Boolean   @default(false)
+  clienteId       String?   @unique
+  cliente         Cliente?  @relation(fields: [clienteId], references: [id])
+
+  // Rastreamento
+  origem          String?             // De onde veio (google, instagram, direto, etc)
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+
+  // Timestamps
+  pesquisaEm      DateTime  @default(now())  // Data/hora da pesquisa
+  contatadoEm     DateTime?                   // Quando foi contatado
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([convertido])
+  @@index([pesquisaEm])
+  @@index([segmento])
+}
+
 model Cliente {
   id        String     @id @default(cuid())
   nome      String
@@ -39,6 +103,7 @@ model Cliente {
   planoId   String?
   plano     Plano?     @relation(fields: [planoId], references: [id])
   contratos Contrato[]
+  lead      Lead?                   // Lead que originou este cliente
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 

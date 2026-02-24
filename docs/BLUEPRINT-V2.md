@@ -154,9 +154,9 @@ interface PropostaPrecificacao {
 
 **Se não tem site:** Score = 0 (oportunidade máxima)
 
-### 2.3 Níveis de Análise
+### 2.3 Visões da Análise
 
-**NÍVEL 1 - Gratuito (após cadastro):**
+**VISÃO DO CLIENTE (pública):**
 ```
 ┌─────────────────────────────────────────┐
 │  SEU SCORE DE VISIBILIDADE DIGITAL      │
@@ -173,15 +173,73 @@ interface PropostaPrecificacao {
 │  ⚠️ Você está perdendo aproximadamente  │
 │     R$12.000/mês em clientes            │
 │                                         │
-│  [Receber Proposta Personalizada]       │
+│  [Falar com Especialista]               │
 └─────────────────────────────────────────┘
 ```
 
-**NÍVEL 2 - Proposta (gerada pelo agente):**
-- Diagnóstico completo por área
-- Plano de ação detalhado
-- Valores e formas de pagamento
-- ROI estimado
+**O cliente NÃO vê:**
+- Detalhes do que está errado
+- Como corrigir cada ponto
+- Checklist de melhorias
+- Plano de ação
+
+**VISÃO INTERNA (Admin/CRM):**
+
+Na ficha do lead no painel administrativo:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FICHA DO LEAD                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Nome: Hortifruti Santo Antônio                                 │
+│  Contato: João Silva | (11) 99999-9999 | joao@email.com        │
+│  Data da Pesquisa: 24/02/2026 às 10:35                         │
+│  Segmento: Varejo/Alimentação                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  SCORES                                                         │
+│  Geral: 47/100 | GBP: 78/100 | Site: 23/100 | Redes: 40/100    │
+├─────────────────────────────────────────────────────────────────┤
+│  DIAGNÓSTICO DETALHADO                                          │
+│                                                                 │
+│  ❌ Google Business Profile:                                    │
+│     • Faltam fotos de produtos (tem 3, ideal 20+)              │
+│     • Horário de funcionamento incompleto                       │
+│     • Sem posts nos últimos 30 dias                            │
+│     • Descrição curta (50 caracteres, ideal 750+)              │
+│                                                                 │
+│  ❌ Site:                                                        │
+│     • LCP: 8.2s (crítico, ideal < 2.5s)                        │
+│     • Não é mobile-friendly                                     │
+│     • Sem SSL/HTTPS                                            │
+│     • Meta description ausente                                  │
+│                                                                 │
+│  ⚠️ Redes Sociais:                                              │
+│     • Instagram: 234 seguidores, último post há 45 dias        │
+│     • Facebook: Página abandonada                               │
+├─────────────────────────────────────────────────────────────────┤
+│  ARGUMENTOS DE FECHAMENTO                                       │
+│                                                                 │
+│  • Está perdendo ~R$8.500/mês em clientes                      │
+│  • 12 concorrentes na região com presença melhor               │
+│  • Apenas 15 avaliações (concorrente líder tem 280)            │
+│  • Site não aparece no Google (sem indexação)                   │
+├─────────────────────────────────────────────────────────────────┤
+│  PLANO DE AÇÃO SUGERIDO                                         │
+│                                                                 │
+│  Semana 1-2: Otimização completa do Google Business            │
+│  Semana 3-4: Novo site responsivo e otimizado                  │
+│  Mês 2: Estratégia de avaliações + redes sociais               │
+│  Mês 3: Monitoramento e ajustes                                │
+├─────────────────────────────────────────────────────────────────┤
+│  PROPOSTA SUGERIDA                                              │
+│                                                                 │
+│  Valor Implantação: R$ 8.500                                   │
+│  Valor Mensal: R$ 1.275 (gestão contínua)                      │
+│  ROI Estimado: Retorno em 3 meses                              │
+├─────────────────────────────────────────────────────────────────┤
+│  [Enviar Proposta]  [Agendar Ligação]  [Marcar como Contatado] │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
