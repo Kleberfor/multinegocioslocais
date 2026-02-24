@@ -16,6 +16,7 @@ import {
   XCircle,
   Download,
 } from "lucide-react";
+import { DeleteLeadButton } from "@/components/admin/delete-lead-button";
 
 type LeadListItem = {
   id: string;
@@ -248,12 +249,15 @@ export default async function LeadsPage() {
                           </span>
                         </td>
                         <td className="p-4">
-                          <Link href={`/admin/leads/${lead.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4 mr-2" />
-                              Ver Ficha
-                            </Button>
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/admin/leads/${lead.id}`}>
+                              <Button variant="outline" size="sm">
+                                <Eye className="w-4 h-4 mr-2" />
+                                Ver Ficha
+                              </Button>
+                            </Link>
+                            <DeleteLeadButton leadId={lead.id} leadNome={lead.nome} />
+                          </div>
                         </td>
                       </tr>
                     );

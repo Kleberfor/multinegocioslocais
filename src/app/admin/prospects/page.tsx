@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
+import { DeleteProspectButton } from "@/components/admin/delete-prospect-button";
 
 type Prospect = {
   id: string;
@@ -110,15 +111,20 @@ export default async function ProspectsPage() {
                         </span>
                       </td>
                       <td className="p-4 text-muted-foreground">
-                        {new Date(prospect.createdAt).toLocaleDateString("pt-BR")}
+                        {new Date(prospect.createdAt).toLocaleDateString("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                        })}
                       </td>
                       <td className="p-4">
-                        <Link href={`/resultado/${prospect.id}`} target="_blank">
-                          <Button variant="outline" size="sm">
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            Ver Resultado
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/resultado/${prospect.id}`} target="_blank">
+                            <Button variant="outline" size="sm">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Ver Resultado
+                            </Button>
+                          </Link>
+                          <DeleteProspectButton prospectId={prospect.id} prospectNome={prospect.nome} />
+                        </div>
                       </td>
                     </tr>
                   ))
