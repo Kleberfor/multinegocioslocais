@@ -7,6 +7,7 @@ import { calculateScore, ScoreBreakdown } from "./scoring";
 import { analisarSite, SiteAnalysis } from "./site-analysis";
 import { gerarProposta, AnaliseInput, PropostaPrecificacao } from "./pricing-agent";
 import { verificarOutrasPlataformas, VerificacaoPlataformas, gerarDiagnosticoPlataformas } from "./other-platforms";
+import { analisarRedesSociais, RedesSociaisAnalise } from "./social-analysis";
 
 // ═══════════════════════════════════════════════════════════════
 // TIPOS
@@ -28,6 +29,9 @@ export interface AnalisePublica {
   // Outras plataformas
   appleMaps: boolean;
   bingPlaces: boolean;
+  // Redes sociais
+  temInstagram: boolean;
+  temFacebook: boolean;
 }
 
 export interface AnaliseInterna {
@@ -66,6 +70,9 @@ export interface AnaliseInterna {
 
   // Outras plataformas
   outrasPlataformas: VerificacaoPlataformas;
+
+  // Redes Sociais
+  redesSociais: RedesSociaisAnalise;
 
   // Metadados
   dataAnalise: string;
@@ -379,8 +386,12 @@ export async function realizarAnaliseCombinada(
   // 3. Analisar site (se tiver)
   const siteAnalysis = await analisarSite(siteUrl || '');
 
-  // 4. Score de redes sociais (placeholder - futuramente integrar APIs)
-  const scoreRedes = 50; // Valor padrão até implementar análise real
+  // 4. Analisar redes sociais (Instagram, Facebook)
+  const redesSociais = await analisarRedesSociais(
+    placeDetails.name,
+    siteUrl || placeDetails.website
+  );
+  const scoreRedes = redesSociais.score;
 
   // 4.5. Verificar outras plataformas (Apple Maps, Bing)
   const outrasPlataformas = await verificarOutrasPlataformas(
@@ -423,6 +434,8 @@ export async function realizarAnaliseCombinada(
         : 'Sua presença está boa, mas pode melhorar',
     appleMaps: outrasPlataformas.appleMaps.encontrado,
     bingPlaces: outrasPlataformas.bingPlaces.encontrado,
+    temInstagram: redesSociais.instagram.encontrado,
+    temFacebook: redesSociais.facebook.encontrado,
   };
 
   // 9. Gerar argumentos de fechamento
@@ -471,7 +484,8 @@ export async function realizarAnaliseCombinada(
     planoAcao,
     proposta,
     outrasPlataformas,
+    redesSociais,
     dataAnalise: new Date().toISOString(),
-    versaoAnalise: '2.1',
+    versaoAnalise: '2.2',
   };
 }

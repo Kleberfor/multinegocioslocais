@@ -176,3 +176,67 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+// ═══════════════════════════════════════════════════════════════
+// FOLLOW-UP AUTOMÁTICO
+// ═══════════════════════════════════════════════════════════════
+
+model FollowUp {
+  id            String    @id @default(cuid())
+  leadId        String
+
+  // Agendamento
+  tipo          String    // PRIMEIRO_CONTATO, SEGUNDO_CONTATO, TERCEIRO_CONTATO, PROPOSTA, FECHAMENTO
+  agendadoPara  DateTime  // Data/hora agendada
+
+  // Status
+  status        String    @default("PENDENTE") // PENDENTE, ENVIADO, REALIZADO, CANCELADO
+  executadoEm   DateTime?
+
+  // Conteúdo
+  assunto       String?
+  mensagem      String?   @db.Text
+  canal         String    @default("EMAIL") // EMAIL, WHATSAPP, TELEFONE
+
+  // Resultado (após execução)
+  resultado     String?   // SUCESSO, SEM_RESPOSTA, NEGATIVO, REAGENDAR
+  observacoes   String?   @db.Text
+
+  // Rastreamento
+  tentativas    Int       @default(0)
+  ultimaTentativa DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+  @@index([agendadoPara])
+  @@index([tipo])
+}
+
+model FollowUpTemplate {
+  id            String    @id @default(cuid())
+
+  // Identificação
+  nome          String    @unique
+  tipo          String    // PRIMEIRO_CONTATO, SEGUNDO_CONTATO, etc
+  canal         String    // EMAIL, WHATSAPP
+
+  // Conteúdo
+  assunto       String?   // Para email
+  mensagem      String    @db.Text
+
+  // Timing
+  diasAposEvento Int      @default(1) // Dias após evento anterior
+  horaEnvio     String    @default("10:00") // Hora preferencial de envio
+
+  // Status
+  ativo         Boolean   @default(true)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tipo])
+  @@index([ativo])
+}

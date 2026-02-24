@@ -14,6 +14,7 @@ import {
   LogOut,
   CreditCard,
   UserPlus,
+  Calendar,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -33,6 +34,11 @@ const menuItems = [
     label: "Leads",
     href: "/admin/leads",
     icon: UserPlus,
+  },
+  {
+    label: "Follow-ups",
+    href: "/admin/followup",
+    icon: Calendar,
   },
   {
     label: "Prospects",

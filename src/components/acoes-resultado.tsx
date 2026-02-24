@@ -32,8 +32,9 @@ export function AcoesResultado({
   );
 
   const compartilharWhatsApp = () => {
+    const urlAnalise = process.env.NEXT_PUBLIC_APP_URL || "https://multinegocioslocais.com.br";
     const texto = encodeURIComponent(
-      `Acabei de analisar a presença digital do meu negócio "${negocio}" e descobri que meu score é ${scoreGeral}/100. Faça a sua análise gratuita também!`
+      `Acabei de analisar a presença digital do meu negócio "${negocio}" e descobri que meu score é ${scoreGeral}/100. Faça a sua análise gratuita também!\n\n${urlAnalise}/analisar`
     );
     window.open(`https://wa.me/?text=${texto}`, "_blank");
   };
@@ -67,12 +68,13 @@ export function AcoesResultado({
             temSite,
             perdaEstimada,
           }}
+          className="bg-white/20 border-white/50 text-white hover:bg-white/30"
         />
 
         <Button
           onClick={compartilharWhatsApp}
           variant="outline"
-          className="gap-2"
+          className="gap-2 bg-white/20 border-white/50 text-white hover:bg-white/30"
         >
           <Share2 className="w-4 h-4" />
           Compartilhar

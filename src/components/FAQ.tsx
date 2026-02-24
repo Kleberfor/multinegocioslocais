@@ -5,28 +5,28 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "A analise e realmente gratuita?",
-    answer: "Sim, a analise e 100% gratuita e sem compromisso. Voce recebe seu score de visibilidade digital e um resumo dos principais pontos de melhoria sem pagar nada.",
+    question: "A análise é realmente gratuita?",
+    answer: "Sim, a análise é 100% gratuita e sem compromisso. Você recebe seu score de visibilidade digital e um resumo dos principais pontos de melhoria sem pagar nada.",
   },
   {
-    question: "Quanto tempo leva para fazer a analise?",
-    answer: "A analise e instantanea. Em poucos segundos voce recebe seu score e pode ver como esta sua presenca digital no Google, site e redes sociais.",
+    question: "Quanto tempo leva para fazer a análise?",
+    answer: "A análise é instantânea. Em poucos segundos você recebe seu score e pode ver como está sua presença digital no Google, site e redes sociais.",
   },
   {
-    question: "O que e analisado?",
-    answer: "Analisamos seu Google Business Profile (fotos, avaliacoes, informacoes), seu site (velocidade, SEO, seguranca) e sua presenca em redes sociais. Tudo isso gera um score de 0 a 100.",
+    question: "O que é analisado?",
+    answer: "Analisamos seu Google Business Profile (imagens, avaliações, informações), seu site (velocidade, SEO, segurança) e sua presença em redes sociais. Tudo isso gera um score de 0 a 100.",
   },
   {
     question: "Como posso melhorar meu score?",
-    answer: "Apos a analise, oferecemos um servico de otimizacao completo. Nossa equipe cuida de tudo: fotos profissionais, respostas a avaliacoes, otimizacao de site e muito mais.",
+    answer: "Após a análise, oferecemos um serviço de otimização completo. Nossa equipe cuida de tudo: imagens profissionais, respostas a avaliações, otimização de site e muito mais.",
   },
   {
-    question: "Preciso ter um site para fazer a analise?",
-    answer: "Nao e obrigatorio. Analisamos seu Google Business Profile mesmo sem site. Porem, ter um site bem otimizado aumenta significativamente sua visibilidade e credibilidade.",
+    question: "Preciso ter um site para fazer a análise?",
+    answer: "Não é obrigatório. Analisamos seu Google Business Profile mesmo sem site. Porém, ter um site bem otimizado aumenta significativamente sua visibilidade e credibilidade.",
   },
   {
-    question: "Quanto custa o servico de otimizacao?",
-    answer: "O valor varia de acordo com as necessidades do seu negocio. Apos a analise gratuita, apresentamos uma proposta personalizada com tudo que esta incluido.",
+    question: "Quanto custa o serviço de otimização?",
+    answer: "O valor varia de acordo com as necessidades do seu negócio. Após a análise gratuita, apresentamos uma proposta personalizada com tudo que está incluído.",
   },
 ];
 
@@ -41,7 +41,7 @@ export function FAQ() {
             Perguntas Frequentes
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Tire suas duvidas sobre a analise de presenca digital
+            Tire suas dúvidas sobre a análise de presença digital
           </p>
         </div>
 

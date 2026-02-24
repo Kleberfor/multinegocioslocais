@@ -187,10 +187,47 @@ function ResultadoLead({ lead }: { lead: any }) {
                 </div>
               </div>
 
-              {/* Outras Plataformas */}
+              {/* Redes Sociais */}
               <div className="mt-6 pt-4 border-t">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Outras Plataformas</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">Redes Sociais</h3>
                 <div className="grid grid-cols-2 gap-3">
+                  <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                    (lead.analiseCompleta as any)?.analisePublica?.temInstagram
+                      ? "bg-green-50 text-green-700"
+                      : "bg-gray-50 text-gray-500"
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      (lead.analiseCompleta as any)?.analisePublica?.temInstagram
+                        ? "bg-green-500"
+                        : "bg-gray-400"
+                    }`} />
+                    <span className="text-sm">Instagram</span>
+                    <span className="text-xs ml-auto">
+                      {(lead.analiseCompleta as any)?.analisePublica?.temInstagram ? "OK" : "Ausente"}
+                    </span>
+                  </div>
+                  <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                    (lead.analiseCompleta as any)?.analisePublica?.temFacebook
+                      ? "bg-green-50 text-green-700"
+                      : "bg-gray-50 text-gray-500"
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      (lead.analiseCompleta as any)?.analisePublica?.temFacebook
+                        ? "bg-green-500"
+                        : "bg-gray-400"
+                    }`} />
+                    <span className="text-sm">Facebook</span>
+                    <span className="text-xs ml-auto">
+                      {(lead.analiseCompleta as any)?.analisePublica?.temFacebook ? "OK" : "Ausente"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Outras Plataformas */}
+              <div className="mt-4 pt-4 border-t">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">Outras Plataformas</h3>
+                <div className="grid grid-cols-1 gap-3">
                   <div className={`flex items-center gap-2 p-2 rounded-lg ${
                     (lead.analiseCompleta as any)?.analisePublica?.appleMaps
                       ? "bg-green-50 text-green-700"
@@ -204,21 +241,6 @@ function ResultadoLead({ lead }: { lead: any }) {
                     <span className="text-sm">Apple Maps</span>
                     <span className="text-xs ml-auto">
                       {(lead.analiseCompleta as any)?.analisePublica?.appleMaps ? "OK" : "Ausente"}
-                    </span>
-                  </div>
-                  <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                    (lead.analiseCompleta as any)?.analisePublica?.bingPlaces
-                      ? "bg-green-50 text-green-700"
-                      : "bg-gray-50 text-gray-500"
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      (lead.analiseCompleta as any)?.analisePublica?.bingPlaces
-                        ? "bg-green-500"
-                        : "bg-gray-400"
-                    }`} />
-                    <span className="text-sm">Bing Places</span>
-                    <span className="text-xs ml-auto">
-                      {(lead.analiseCompleta as any)?.analisePublica?.bingPlaces ? "OK" : "Ausente"}
                     </span>
                   </div>
                 </div>

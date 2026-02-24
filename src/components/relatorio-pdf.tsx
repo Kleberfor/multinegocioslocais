@@ -16,7 +16,7 @@ interface RelatorioData {
   perdaEstimada: number;
 }
 
-export function BotaoDownloadPDF({ data }: { data: RelatorioData }) {
+export function BotaoDownloadPDF({ data, className }: { data: RelatorioData; className?: string }) {
   const [gerando, setGerando] = useState(false);
 
   const gerarPDF = async () => {
@@ -230,7 +230,7 @@ export function BotaoDownloadPDF({ data }: { data: RelatorioData }) {
       onClick={gerarPDF}
       disabled={gerando}
       variant="outline"
-      className="gap-2"
+      className={`gap-2 ${className || ""}`}
     >
       {gerando ? (
         <>

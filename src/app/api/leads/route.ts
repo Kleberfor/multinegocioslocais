@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { realizarAnaliseCombinada } from "@/lib/combined-analysis";
 import { auth } from "@/lib/auth";
 import { enviarNotificacaoNovoLead } from "@/lib/email";
+import { agendarFollowUpsParaLead } from "@/lib/followup";
 
 // POST: Criar novo lead com análise
 export async function POST(request: NextRequest) {
@@ -174,6 +175,11 @@ export async function POST(request: NextRequest) {
       scoreSite: analiseCompleta.analisePublica.scoreSite,
       valorSugerido: analiseCompleta.proposta.valorImplantacao,
     }).catch((err) => console.error("[Leads] Erro ao enviar email:", err));
+
+    // Agendar follow-ups automáticos (não bloqueia a resposta)
+    agendarFollowUpsParaLead(lead.id).catch((err) =>
+      console.error("[Leads] Erro ao agendar follow-ups:", err)
+    );
 
     // Retornar apenas dados públicos para o cliente
     return NextResponse.json({

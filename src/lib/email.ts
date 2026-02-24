@@ -147,3 +147,87 @@ export async function enviarNotificacaoNovoLead(lead: NovoLeadData) {
     return { success: false, error: String(error) };
   }
 }
+
+interface FollowUpEmailData {
+  para: string;
+  nome: string;
+  assunto: string;
+  mensagem: string;
+}
+
+/**
+ * Envia email de follow-up para um lead
+ */
+export async function enviarEmailFollowUp(data: FollowUpEmailData) {
+  if (!resend) {
+    console.log("[Email] Resend não configurado, pulando follow-up");
+    return { success: false, error: "Email não configurado" };
+  }
+
+  try {
+    // Converter quebras de linha em HTML
+    const mensagemHtml = data.mensagem
+      .split("\n")
+      .map((linha) => (linha.trim() === "" ? "<br>" : `<p style="margin: 0 0 8px 0;">${linha}</p>`))
+      .join("");
+
+    const { data: resultado, error } = await resend.emails.send({
+      from: `MultiNegócios Locais <${FROM_EMAIL}>`,
+      to: [data.para],
+      subject: data.assunto,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+
+            <!-- Header -->
+            <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center;">
+              <img src="${process.env.NEXT_PUBLIC_APP_URL || "https://multinegocioslocais.vercel.app"}/logo-white.png" alt="MultiNegócios Locais" style="max-height: 32px;">
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 32px; color: #374151; font-size: 16px; line-height: 1.6;">
+              ${mensagemHtml}
+            </div>
+
+            <!-- Footer -->
+            <div style="padding: 24px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
+                MultiNegócios Locais - Transformando negócios locais
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                WhatsApp: (11) 91668-2510 | multinegocioslocais.com.br
+              </p>
+            </div>
+          </div>
+
+          <!-- Unsubscribe -->
+          <div style="text-align: center; padding: 20px;">
+            <p style="color: #9ca3af; font-size: 11px;">
+              Você está recebendo este email porque fez uma análise de presença digital conosco.
+              <br>
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(data.para)}" style="color: #9ca3af;">Cancelar inscrição</a>
+            </p>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("[Email] Erro ao enviar follow-up:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log("[Email] Follow-up enviado:", resultado?.id);
+    return { success: true, id: resultado?.id };
+  } catch (error) {
+    console.error("[Email] Erro ao enviar follow-up:", error);
+    return { success: false, error: String(error) };
+  }
+}
