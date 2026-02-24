@@ -1,0 +1,83 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { MessageCircle, Share2 } from "lucide-react";
+import { BotaoDownloadPDF } from "./relatorio-pdf";
+
+interface AcoesResultadoProps {
+  negocio: string;
+  endereco: string;
+  scoreGeral: number;
+  scoreGBP: number;
+  scoreSite: number;
+  scoreRedes: number;
+  temSite: boolean;
+  perdaEstimada: number;
+  whatsappNumero: string;
+}
+
+export function AcoesResultado({
+  negocio,
+  endereco,
+  scoreGeral,
+  scoreGBP,
+  scoreSite,
+  scoreRedes,
+  temSite,
+  perdaEstimada,
+  whatsappNumero,
+}: AcoesResultadoProps) {
+  const mensagemWhatsApp = encodeURIComponent(
+    `Olá! Fiz a análise do meu negócio ${negocio} e gostaria de saber mais sobre como melhorar minha presença digital.`
+  );
+
+  const compartilharWhatsApp = () => {
+    const texto = encodeURIComponent(
+      `Acabei de analisar a presença digital do meu negócio "${negocio}" e descobri que meu score é ${scoreGeral}/100. Faça a sua análise gratuita também!`
+    );
+    window.open(`https://wa.me/?text=${texto}`, "_blank");
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Botões principais */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <a
+          href={`https://wa.me/${whatsappNumero}?text=${mensagemWhatsApp}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button size="lg" variant="secondary" className="w-full sm:w-auto font-semibold">
+            <MessageCircle className="w-5 h-5 mr-2" />
+            Falar com Especialista
+          </Button>
+        </a>
+      </div>
+
+      {/* Botões secundários */}
+      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+        <BotaoDownloadPDF
+          data={{
+            negocio,
+            endereco,
+            scoreGeral,
+            scoreGBP,
+            scoreSite,
+            scoreRedes,
+            temSite,
+            perdaEstimada,
+          }}
+        />
+
+        <Button
+          onClick={compartilharWhatsApp}
+          variant="outline"
+          className="gap-2"
+        >
+          <Share2 className="w-4 h-4" />
+          Compartilhar
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -9,8 +9,8 @@ import {
   Phone,
   TrendingDown,
   AlertTriangle,
-  MessageCircle,
 } from "lucide-react";
+import { AcoesResultado } from "@/components/acoes-resultado";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -273,18 +273,17 @@ function ResultadoLead({ lead }: { lead: any }) {
               um plano personalizado para melhorar sua presença digital.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a
-                href={`https://wa.me/5511999999999?text=Olá! Fiz a análise do meu negócio ${lead.negocio} e gostaria de saber mais sobre como melhorar minha presença digital.`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto font-semibold">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Falar com Especialista
-                </Button>
-              </a>
-            </div>
+            <AcoesResultado
+              negocio={lead.negocio}
+              endereco={lead.enderecoGoogle || ""}
+              scoreGeral={scoreGeral}
+              scoreGBP={scoreGBP}
+              scoreSite={scoreSite}
+              scoreRedes={scoreRedes}
+              temSite={!!lead.siteUrl}
+              perdaEstimada={perdaEstimada}
+              whatsappNumero="5511916682510"
+            />
 
             <p className="text-sm opacity-70 mt-4">
               <Phone className="w-4 h-4 inline mr-1" />
