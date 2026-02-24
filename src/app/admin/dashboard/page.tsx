@@ -113,6 +113,7 @@ async function getStats() {
     date: new Date(item.date).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
+      timeZone: "America/Sao_Paulo",
     }),
     leads: Number(item.count),
   }));
@@ -305,7 +306,9 @@ export default async function DashboardPage() {
                         {lead.scoreGeral}/100
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(lead.pesquisaEm).toLocaleDateString("pt-BR")}
+                        {new Date(lead.pesquisaEm).toLocaleDateString("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                        })}
                       </p>
                     </div>
 

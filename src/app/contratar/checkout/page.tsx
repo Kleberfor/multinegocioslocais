@@ -14,7 +14,6 @@ import {
   CheckCircle,
   CreditCard,
   QrCode,
-  Barcode,
   Shield,
   Lock,
   Copy,
@@ -37,7 +36,7 @@ interface ClienteData {
   }[];
 }
 
-type PaymentMethod = "pix" | "credit_card" | "boleto";
+type PaymentMethod = "pix" | "credit_card";
 
 interface PixData {
   qrCode: string;
@@ -46,11 +45,6 @@ interface PixData {
   pagamentoId: string;
 }
 
-interface BoletoData {
-  boletoUrl: string;
-  barcode: string;
-  pagamentoId: string;
-}
 
 function CheckoutContent() {
   const router = useRouter();
@@ -62,7 +56,6 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [pixData, setPixData] = useState<PixData | null>(null);
-  const [boletoData, setBoletoData] = useState<BoletoData | null>(null);
   const [paymentGenerated, setPaymentGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -148,38 +141,6 @@ function CheckoutContent() {
     }
   };
 
-  const handleBoletoPayment = async () => {
-    setIsProcessing(true);
-
-    try {
-      const response = await fetch("/api/payment/boleto", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clienteId,
-          contratoId: cliente?.contratos[0]?.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.boletoUrl) {
-        setBoletoData({
-          boletoUrl: data.boletoUrl,
-          barcode: data.barcode,
-          pagamentoId: data.pagamentoId,
-        });
-        setPaymentGenerated(true);
-      } else {
-        alert(data.error || "Erro ao gerar boleto. Tente novamente.");
-      }
-    } catch (error) {
-      console.error("Erro ao gerar boleto:", error);
-      alert("Erro ao gerar boleto. Tente novamente.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleCardPayment = async () => {
     setIsProcessing(true);
@@ -221,9 +182,6 @@ function CheckoutContent() {
     switch (paymentMethod) {
       case "pix":
         await handlePixPayment();
-        break;
-      case "boleto":
-        await handleBoletoPayment();
         break;
       case "credit_card":
         await handleCardPayment();
@@ -377,7 +335,7 @@ function CheckoutContent() {
                     <CardTitle className="text-lg">Forma de Pagamento</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2">
                       <button
                         onClick={() => setPaymentMethod("pix")}
                         className={`p-4 rounded-lg border-2 text-center transition-all ${
@@ -405,21 +363,6 @@ function CheckoutContent() {
                         <p className="font-medium">Cartão de Crédito</p>
                         <p className="text-xs text-muted-foreground">
                           Até {parcelas}x sem juros
-                        </p>
-                      </button>
-
-                      <button
-                        onClick={() => setPaymentMethod("boleto")}
-                        className={`p-4 rounded-lg border-2 text-center transition-all ${
-                          paymentMethod === "boleto"
-                            ? "border-primary bg-primary/5"
-                            : "border-muted hover:border-primary/50"
-                        }`}
-                      >
-                        <Barcode className="w-8 h-8 mx-auto mb-2" />
-                        <p className="font-medium">Boleto</p>
-                        <p className="text-xs text-muted-foreground">
-                          Vencimento em 3 dias
                         </p>
                       </button>
                     </div>
@@ -500,17 +443,6 @@ function CheckoutContent() {
                       </div>
                     )}
 
-                    {paymentMethod === "boleto" && (
-                      <div className="text-center py-8">
-                        <Barcode className="w-24 h-24 mx-auto mb-4 text-muted-foreground" />
-                        <p className="text-lg font-medium mb-2">
-                          Pague com Boleto Bancário
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Vencimento em 3 dias úteis. Acesso liberado após confirmação.
-                        </p>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
 
@@ -535,7 +467,6 @@ function CheckoutContent() {
                       <>
                         {paymentMethod === "pix" && "Gerar QR Code PIX"}
                         {paymentMethod === "credit_card" && "Pagar com Cartão"}
-                        {paymentMethod === "boleto" && "Gerar Boleto"}
                       </>
                     )}
                   </Button>
@@ -646,104 +577,6 @@ function CheckoutContent() {
                   </Card>
                 )}
 
-                {/* Boleto Gerado */}
-                {boletoData && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center">
-                        <Barcode className="w-5 h-5 mr-2" />
-                        Boleto Gerado
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                        <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-2" />
-                        <p className="text-green-800 font-medium">
-                          Boleto gerado com sucesso!
-                        </p>
-                      </div>
-
-                      {boletoData.barcode && (
-                        <div>
-                          <Label>Código de Barras</Label>
-                          <div className="flex mt-2">
-                            <Input
-                              value={boletoData.barcode}
-                              readOnly
-                              className="font-mono text-xs"
-                            />
-                            <Button
-                              variant="outline"
-                              className="ml-2"
-                              onClick={() => copyToClipboard(boletoData.barcode)}
-                            >
-                              {copied ? (
-                                <CheckCircle className="w-4 h-4" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex flex-col gap-4">
-                        <a
-                          href={boletoData.boletoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button className="w-full" size="lg">
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            Abrir Boleto
-                          </Button>
-                        </a>
-
-                        {/* Botão Simular Pagamento - só em modo teste */}
-                        {process.env.NEXT_PUBLIC_TEST_MODE === "true" && (
-                          <Button
-                            onClick={async () => {
-                              setIsProcessing(true);
-                              try {
-                                const response = await fetch("/api/payment/simulate", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ pagamentoId: boletoData.pagamentoId }),
-                                });
-                                if (response.ok) {
-                                  router.push(`/sucesso?cliente=${clienteId}`);
-                                }
-                              } catch (error) {
-                                console.error("Erro ao simular:", error);
-                              } finally {
-                                setIsProcessing(false);
-                              }
-                            }}
-                            disabled={isProcessing}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Simular Pagamento Aprovado (Teste)
-                          </Button>
-                        )}
-
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setPaymentGenerated(false);
-                            setBoletoData(null);
-                          }}
-                        >
-                          Voltar e escolher outra forma de pagamento
-                        </Button>
-                      </div>
-
-                      <p className="text-sm text-muted-foreground text-center">
-                        O acesso será liberado após confirmação do pagamento (até 3 dias úteis).
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
               </>
             )}
           </div>

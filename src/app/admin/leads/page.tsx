@@ -235,12 +235,15 @@ export default async function LeadsPage() {
                           </span>
                         </td>
                         <td className="p-4 text-sm text-muted-foreground">
-                          {new Date(lead.pesquisaEm).toLocaleDateString("pt-BR")}
+                          {new Date(lead.pesquisaEm).toLocaleDateString("pt-BR", {
+                            timeZone: "America/Sao_Paulo",
+                          })}
                           <br />
                           <span className="text-xs">
                             {new Date(lead.pesquisaEm).toLocaleTimeString("pt-BR", {
                               hour: "2-digit",
                               minute: "2-digit",
+                              timeZone: "America/Sao_Paulo",
                             })}
                           </span>
                         </td>

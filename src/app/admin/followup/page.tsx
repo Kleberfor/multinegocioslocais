@@ -239,12 +239,15 @@ export default async function FollowUpPage() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="text-sm font-medium">
-                          {new Date(followUp.agendadoPara).toLocaleDateString("pt-BR")}
+                          {new Date(followUp.agendadoPara).toLocaleDateString("pt-BR", {
+                            timeZone: "America/Sao_Paulo",
+                          })}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(followUp.agendadoPara).toLocaleTimeString("pt-BR", {
                             hour: "2-digit",
                             minute: "2-digit",
+                            timeZone: "America/Sao_Paulo",
                           })}
                         </p>
                       </div>
