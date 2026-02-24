@@ -100,14 +100,13 @@ async function verificarUrl(url: string): Promise<{ valido: boolean; urlFinal: s
 async function analisarComPageSpeed(url: string): Promise<any> {
   const apiKey = process.env.GOOGLE_PAGESPEED_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
 
-  const params = new URLSearchParams({
-    url: url,
-    category: 'performance',
-    category: 'accessibility',
-    category: 'best-practices',
-    category: 'seo',
-    strategy: 'mobile',
-  });
+  const params = new URLSearchParams();
+  params.append('url', url);
+  params.append('category', 'performance');
+  params.append('category', 'accessibility');
+  params.append('category', 'best-practices');
+  params.append('category', 'seo');
+  params.append('strategy', 'mobile');
 
   if (apiKey) {
     params.append('key', apiKey);
