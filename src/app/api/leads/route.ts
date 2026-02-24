@@ -31,13 +31,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se já existe lead com este email
+    // Verificar se já existe lead com este email E mesmo placeId
     const leadExistente = await prisma.lead.findFirst({
-      where: { email },
+      where: {
+        email,
+        placeId,
+      },
     });
 
     if (leadExistente) {
-      // Retornar lead existente com análise pública
+      // Mesmo usuário analisando o mesmo negócio - retornar análise existente
       return NextResponse.json({
         id: leadExistente.id,
         analisePublica: {
@@ -46,11 +49,11 @@ export async function POST(request: NextRequest) {
           scoreSite: leadExistente.scoreSite,
           scoreRedes: leadExistente.scoreRedes,
         },
-        mensagem: "Lead já existe",
+        mensagem: "Análise já realizada para este negócio",
       });
     }
 
-    // Realizar análise combinada
+    // Realizar análise combinada (novo negócio ou novo usuário)
     const analiseCompleta = await realizarAnaliseCombinada(
       placeId,
       siteUrl || null,
