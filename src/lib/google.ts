@@ -8,6 +8,7 @@ export interface PlaceResult {
   rating?: number;
   userRatingsTotal?: number;
   photos?: number;
+  photosDisplay?: string; // "10+" quando há 10 fotos (limite da API)
   types?: string[];
   businessStatus?: string;
   openingHours?: {
@@ -20,6 +21,7 @@ export interface PlaceResult {
 }
 
 export interface PlaceDetails extends PlaceResult {
+  photosDisplay?: string;
   reviews?: {
     rating: number;
     text: string;
@@ -55,17 +57,22 @@ export async function searchPlaces(query: string): Promise<PlaceResult[]> {
     throw new Error(`Erro na busca: ${data.status}`);
   }
 
-  return (data.results || []).map((place: any) => ({
-    placeId: place.place_id,
-    name: place.name,
-    address: place.formatted_address,
-    rating: place.rating,
-    userRatingsTotal: place.user_ratings_total,
-    photos: place.photos?.length || 0,
-    types: place.types,
-    businessStatus: place.business_status,
-    openingHours: place.opening_hours,
-  }));
+  return (data.results || []).map((place: any) => {
+    const photosCount = place.photos?.length || 0;
+    return {
+      placeId: place.place_id,
+      name: place.name,
+      address: place.formatted_address,
+      rating: place.rating,
+      userRatingsTotal: place.user_ratings_total,
+      photos: photosCount,
+      // A API do Google retorna no máximo 10 fotos, então 10 significa "10 ou mais"
+      photosDisplay: photosCount >= 10 ? "10+" : String(photosCount),
+      types: place.types,
+      businessStatus: place.business_status,
+      openingHours: place.opening_hours,
+    };
+  });
 }
 
 /**
@@ -113,6 +120,7 @@ export async function getPlaceDetails(
   }
 
   const place = data.result;
+  const photosCount = place.photos?.length || 0;
 
   return {
     placeId: place.place_id,
@@ -120,7 +128,9 @@ export async function getPlaceDetails(
     address: place.formatted_address,
     rating: place.rating,
     userRatingsTotal: place.user_ratings_total,
-    photos: place.photos?.length || 0,
+    photos: photosCount,
+    // A API do Google retorna no máximo 10 fotos, então 10 significa "10 ou mais"
+    photosDisplay: photosCount >= 10 ? "10+" : String(photosCount),
     types: place.types,
     businessStatus: place.business_status,
     openingHours: place.opening_hours

@@ -145,7 +145,7 @@ export function calculateScore(place: PlaceDetails): ScoreBreakdown {
   }
 
   if (place.photos && place.photos >= 10) {
-    strengths.push(`Boa quantidade de fotos: ${place.photos} fotos`);
+    strengths.push(`Boa quantidade de fotos: ${place.photosDisplay || place.photos} fotos`);
   }
 
   if (place.website) {
@@ -245,18 +245,18 @@ function evaluateGuideline(
       // Não conseguimos diferenciar tipos de foto via API
       // Usar quantidade como proxy
       passed = !!place.photos && place.photos >= 3;
-      currentValue = `${place.photos || 0} fotos no perfil`;
+      currentValue = `${place.photosDisplay || place.photos || 0} fotos no perfil`;
       break;
 
     case "photos_products":
     case "photos_team":
       passed = !!place.photos && place.photos >= 5;
-      currentValue = `${place.photos || 0} fotos no perfil`;
+      currentValue = `${place.photosDisplay || place.photos || 0} fotos no perfil`;
       break;
 
     case "photos_quantity":
       passed = !!place.photos && place.photos >= 10;
-      currentValue = `${place.photos || 0} fotos`;
+      currentValue = `${place.photosDisplay || place.photos || 0} fotos`;
       break;
 
     case "photos_quality":

@@ -151,25 +151,28 @@ function gerarDiagnosticoGBP(place: PlaceDetails, scoreResult: ScoreBreakdown): 
     });
   }
 
-  // Fotos
+  // Fotos (API do Google retorna no máximo 10 fotos, usar photosDisplay para exibição correta)
   const fotos = place.photos || 0;
+  const fotosDisplay = place.photosDisplay || String(fotos);
   if (fotos < 5) {
     itens.push({
       titulo: 'Poucas fotos',
-      situacaoAtual: `${fotos} fotos`,
+      situacaoAtual: `${fotosDisplay} fotos`,
       ideal: '20+ fotos',
       impacto: 'alto',
       comoResolver: 'Adicionar fotos profissionais do estabelecimento, produtos e equipe',
     });
-  } else if (fotos < 15) {
+  } else if (fotos < 10) {
+    // Se tem menos de 10, sabemos o número exato
     itens.push({
       titulo: 'Fotos insuficientes',
-      situacaoAtual: `${fotos} fotos`,
+      situacaoAtual: `${fotosDisplay} fotos`,
       ideal: '20+ fotos',
       impacto: 'medio',
       comoResolver: 'Adicionar mais fotos variadas e atualizadas',
     });
   }
+  // Se tem 10+ fotos, não adicionamos como problema pois pode ter bem mais
 
   // Website
   if (!place.website) {
