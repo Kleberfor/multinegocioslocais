@@ -20,6 +20,7 @@ import {
   Target,
   FileText,
 } from "lucide-react";
+import { LeadActions } from "@/components/admin/lead-actions";
 
 type Lead = {
   id: string;
@@ -113,9 +114,23 @@ export default async function LeadDetailPage({
           <h1 className="text-3xl font-bold">{lead.nome}</h1>
           <p className="text-muted-foreground">{lead.negocio}</p>
         </div>
-        <span className={`ml-auto px-4 py-2 rounded-full text-sm font-medium ${getStatusBadge(lead.status)}`}>
-          {lead.status}
-        </span>
+        <div className="ml-auto flex items-center gap-4">
+          <LeadActions
+            lead={{
+              id: lead.id,
+              nome: lead.nome,
+              email: lead.email,
+              telefone: lead.telefone,
+              negocio: lead.negocio,
+              status: lead.status,
+              valorSugerido: lead.valorSugerido ? Number(lead.valorSugerido) : null,
+              observacoes: lead.observacoes,
+            }}
+          />
+          <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusBadge(lead.status)}`}>
+            {lead.status}
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -168,7 +183,7 @@ export default async function LeadDetailPage({
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm">
-                  Pesquisa em: {new Date(lead.pesquisaEm).toLocaleString("pt-BR")}
+                  Pesquisa em: {new Date(lead.pesquisaEm).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                 </span>
               </div>
             </CardContent>

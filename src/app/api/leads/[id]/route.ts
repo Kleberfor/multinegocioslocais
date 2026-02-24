@@ -63,7 +63,12 @@ export async function PATCH(
     const body = await request.json();
 
     const {
+      nome,
+      email,
+      telefone,
+      negocio,
       status,
+      valorSugerido,
       observacoes,
       motivoPerda,
       contatadoEm,
@@ -72,7 +77,12 @@ export async function PATCH(
     const lead = await prisma.lead.update({
       where: { id },
       data: {
+        ...(nome && { nome }),
+        ...(email && { email }),
+        ...(telefone && { telefone }),
+        ...(negocio && { negocio }),
         ...(status && { status }),
+        ...(valorSugerido !== undefined && { valorSugerido }),
         ...(observacoes !== undefined && { observacoes }),
         ...(motivoPerda !== undefined && { motivoPerda }),
         ...(contatadoEm && { contatadoEm: new Date(contatadoEm) }),
