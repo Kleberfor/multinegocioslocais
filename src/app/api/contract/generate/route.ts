@@ -6,6 +6,7 @@ import { generateContractHTML, ContractData } from "@/lib/contract";
 const PLANOS: Record<string, { implantacao: number; mensalidade: number; parcelas: number }> = {
   "plano-6-meses": { implantacao: 3000, mensalidade: 500, parcelas: 6 },
   "plano-12-meses": { implantacao: 3000, mensalidade: 500, parcelas: 12 },
+  "plano-customizado": { implantacao: 0, mensalidade: 0, parcelas: 1 }, // Plano customizado para conversão de leads
 };
 
 export async function POST(request: NextRequest) {
@@ -45,7 +46,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const plano = PLANOS[cliente.planoId || "plano-6-meses"] || PLANOS["plano-6-meses"];
+    const planoId = cliente.planoId || "plano-6-meses";
+    const plano = PLANOS[planoId] || PLANOS["plano-6-meses"];
+    const isCustomizado = planoId === "plano-customizado";
+
     const endereco = cliente.endereco as {
       logradouro: string;
       numero: string;
@@ -56,25 +60,31 @@ export async function POST(request: NextRequest) {
       cep: string;
     };
 
-    const enderecoCompleto = `${endereco.logradouro}, ${endereco.numero}${
+    const enderecoCompleto = endereco ? `${endereco.logradouro || ""}, ${endereco.numero || ""}${
       endereco.complemento ? `, ${endereco.complemento}` : ""
-    } - ${endereco.bairro}, ${endereco.cidade}/${endereco.estado} - CEP: ${endereco.cep}`;
+    } - ${endereco.bairro || ""}, ${endereco.cidade || ""}/${endereco.estado || ""} - CEP: ${endereco.cep || ""}` : "Endereço não informado";
 
     // Data de vencimento: 30 dias após hoje
     const dataVencimento = new Date();
     dataVencimento.setDate(dataVencimento.getDate() + 30);
 
+    // Para plano customizado (conversão de lead), usar valor do contrato diretamente
+    const valorTotal = Number(contrato.valor) || 0;
+    const valorImplantacao = isCustomizado ? valorTotal : plano.implantacao;
+    const valorMensalidade = isCustomizado ? 0 : plano.mensalidade;
+    const parcelas = isCustomizado ? 1 : plano.parcelas;
+
     const contractData: ContractData = {
-      clienteNome: cliente.nome,
-      clienteCpfCnpj: formatCpfCnpj(cliente.cpfCnpj),
+      clienteNome: cliente.nome || "Nome não informado",
+      clienteCpfCnpj: formatCpfCnpj(cliente.cpfCnpj || ""),
       clienteEndereco: enderecoCompleto,
-      clienteEmail: cliente.email,
-      clienteTelefone: formatPhone(cliente.telefone),
-      negocioNome: cliente.negocio,
-      valorImplantacao: plano.implantacao,
-      valorMensalidade: plano.mensalidade,
-      parcelas: plano.parcelas,
-      valorTotal: Number(contrato.valor),
+      clienteEmail: cliente.email || "Email não informado",
+      clienteTelefone: formatPhone(cliente.telefone || ""),
+      negocioNome: cliente.negocio || "Negócio não informado",
+      valorImplantacao,
+      valorMensalidade,
+      parcelas,
+      valorTotal,
       dataContrato: new Date().toISOString(),
       dataVencimentoPrimeiraParcela: dataVencimento.toISOString(),
       contratoId: contrato.id.substring(0, 8).toUpperCase(),
