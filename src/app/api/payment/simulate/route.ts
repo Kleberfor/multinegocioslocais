@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// API para simular pagamento aprovado (apenas em desenvolvimento)
+// API para simular pagamento aprovado (apenas em modo de teste)
 export async function POST(request: NextRequest) {
-  // Bloquear em produção
-  if (process.env.NODE_ENV === "production") {
+  // Bloquear se não estiver em modo de teste
+  if (process.env.NEXT_PUBLIC_TEST_MODE !== "true") {
     return NextResponse.json(
       { error: "Não disponível em produção" },
       { status: 403 }
