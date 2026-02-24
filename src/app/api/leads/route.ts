@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { realizarAnaliseCombinada } from "@/lib/combined-analysis";
 import { auth } from "@/lib/auth";
+import { enviarNotificacaoNovoLead } from "@/lib/email";
 
 // POST: Criar novo lead com análise
 export async function POST(request: NextRequest) {
@@ -159,6 +160,20 @@ export async function POST(request: NextRequest) {
         pesquisaEm: new Date(),
       },
     });
+
+    // Enviar notificação por email (não bloqueia a resposta)
+    enviarNotificacaoNovoLead({
+      id: lead.id,
+      nome,
+      email,
+      telefone,
+      negocio,
+      segmento,
+      scoreGeral: analiseCompleta.analisePublica.scoreGeral,
+      scoreGBP: analiseCompleta.analisePublica.scoreGBP,
+      scoreSite: analiseCompleta.analisePublica.scoreSite,
+      valorSugerido: analiseCompleta.proposta.valorImplantacao,
+    }).catch((err) => console.error("[Leads] Erro ao enviar email:", err));
 
     // Retornar apenas dados públicos para o cliente
     return NextResponse.json({

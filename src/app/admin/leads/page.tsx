@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Download,
 } from "lucide-react";
 
 type LeadListItem = {
@@ -87,10 +88,18 @@ export default async function LeadsPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Leads</h1>
-        <p className="text-muted-foreground">
-          {leads.length} leads capturados
-        </p>
+        <div>
+          <h1 className="text-3xl font-bold">Leads</h1>
+          <p className="text-muted-foreground">
+            {leads.length} leads capturados
+          </p>
+        </div>
+        <a href="/api/leads/export" download>
+          <Button variant="outline" className="gap-2">
+            <Download className="w-4 h-4" />
+            Exportar CSV
+          </Button>
+        </a>
       </div>
 
       {/* Stats Cards */}

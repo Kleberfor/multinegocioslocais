@@ -1,0 +1,149 @@
+import { Resend } from "resend";
+
+// Inicializar Resend (API key via env)
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
+
+// Email do admin que receberá as notificações
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@multinegocioslocais.com.br";
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@multinegocioslocais.com.br";
+
+interface NovoLeadData {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  negocio: string;
+  segmento: string;
+  scoreGeral: number;
+  scoreGBP: number;
+  scoreSite: number;
+  valorSugerido?: number;
+}
+
+/**
+ * Envia notificação de novo lead para o admin
+ */
+export async function enviarNotificacaoNovoLead(lead: NovoLeadData) {
+  if (!resend) {
+    console.log("[Email] Resend não configurado, pulando notificação");
+    return { success: false, error: "Email não configurado" };
+  }
+
+  const scoreStatus =
+    lead.scoreGeral >= 70
+      ? "🟢 Bom"
+      : lead.scoreGeral >= 40
+      ? "🟡 Regular"
+      : "🔴 Crítico";
+
+  const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://multinegocioslocais.vercel.app"}/admin/leads/${lead.id}`;
+  const whatsappUrl = `https://wa.me/55${lead.telefone.replace(/\D/g, "")}`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: `MultiNegócios Locais <${FROM_EMAIL}>`,
+      to: [ADMIN_EMAIL],
+      subject: `🆕 Novo Lead: ${lead.negocio} (Score ${lead.scoreGeral}/100)`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+
+            <!-- Header -->
+            <div style="background-color: #2563eb; color: white; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Novo Lead Recebido!</h1>
+            </div>
+
+            <!-- Score Badge -->
+            <div style="padding: 24px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              <div style="display: inline-block; padding: 16px 32px; border-radius: 50%; border: 4px solid ${lead.scoreGeral >= 70 ? "#22c55e" : lead.scoreGeral >= 40 ? "#eab308" : "#ef4444"}; background-color: ${lead.scoreGeral >= 70 ? "#f0fdf4" : lead.scoreGeral >= 40 ? "#fefce8" : "#fef2f2"};">
+                <span style="font-size: 36px; font-weight: bold; color: ${lead.scoreGeral >= 70 ? "#16a34a" : lead.scoreGeral >= 40 ? "#ca8a04" : "#dc2626"};">${lead.scoreGeral}</span>
+                <span style="font-size: 14px; color: #6b7280;">/100</span>
+              </div>
+              <p style="margin: 12px 0 0 0; font-size: 14px; color: #6b7280;">${scoreStatus}</p>
+            </div>
+
+            <!-- Lead Info -->
+            <div style="padding: 24px;">
+              <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;">${lead.negocio}</h2>
+
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #6b7280; width: 120px;">Nome:</td>
+                  <td style="padding: 8px 0; font-weight: 500;">${lead.nome}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6b7280;">Email:</td>
+                  <td style="padding: 8px 0;"><a href="mailto:${lead.email}" style="color: #2563eb;">${lead.email}</a></td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6b7280;">Telefone:</td>
+                  <td style="padding: 8px 0;"><a href="tel:${lead.telefone}" style="color: #2563eb;">${lead.telefone}</a></td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #6b7280;">Segmento:</td>
+                  <td style="padding: 8px 0;">${lead.segmento}</td>
+                </tr>
+              </table>
+
+              <!-- Scores -->
+              <div style="margin-top: 20px; padding: 16px; background-color: #f9fafb; border-radius: 8px;">
+                <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280; text-transform: uppercase;">Scores</h3>
+                <div style="display: flex; gap: 16px;">
+                  <div style="flex: 1; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: ${lead.scoreGBP >= 70 ? "#16a34a" : lead.scoreGBP >= 40 ? "#ca8a04" : "#dc2626"};">${lead.scoreGBP}</div>
+                    <div style="font-size: 12px; color: #6b7280;">Google</div>
+                  </div>
+                  <div style="flex: 1; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: ${lead.scoreSite >= 70 ? "#16a34a" : lead.scoreSite >= 40 ? "#ca8a04" : "#dc2626"};">${lead.scoreSite}</div>
+                    <div style="font-size: 12px; color: #6b7280;">Site</div>
+                  </div>
+                  ${lead.valorSugerido ? `
+                  <div style="flex: 1; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #2563eb;">R$ ${lead.valorSugerido.toLocaleString("pt-BR")}</div>
+                    <div style="font-size: 12px; color: #6b7280;">Valor Sugerido</div>
+                  </div>
+                  ` : ""}
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="padding: 24px; background-color: #f9fafb; text-align: center;">
+              <a href="${whatsappUrl}" style="display: inline-block; padding: 12px 24px; background-color: #25d366; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; margin-right: 8px;">
+                💬 WhatsApp
+              </a>
+              <a href="${adminUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
+                📋 Ver Detalhes
+              </a>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding: 16px; text-align: center; color: #9ca3af; font-size: 12px;">
+              MultiNegócios Locais - Sistema de Gestão de Leads
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("[Email] Erro ao enviar:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log("[Email] Notificação enviada:", data?.id);
+    return { success: true, id: data?.id };
+  } catch (error) {
+    console.error("[Email] Erro ao enviar notificação:", error);
+    return { success: false, error: String(error) };
+  }
+}
