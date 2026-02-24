@@ -6,6 +6,7 @@ import { getPlaceDetails, PlaceDetails } from "./google";
 import { calculateScore, ScoreBreakdown } from "./scoring";
 import { analisarSite, SiteAnalysis } from "./site-analysis";
 import { gerarProposta, AnaliseInput, PropostaPrecificacao } from "./pricing-agent";
+import { verificarOutrasPlataformas, VerificacaoPlataformas, gerarDiagnosticoPlataformas } from "./other-platforms";
 
 // ═══════════════════════════════════════════════════════════════
 // TIPOS
@@ -24,6 +25,9 @@ export interface AnalisePublica {
   temSite: boolean;
   perdaPotencial: number; // R$ estimado que está perdendo/mês
   mensagemPrincipal: string;
+  // Outras plataformas
+  appleMaps: boolean;
+  bingPlaces: boolean;
 }
 
 export interface AnaliseInterna {
@@ -59,6 +63,9 @@ export interface AnaliseInterna {
 
   // Proposta de precificação
   proposta: PropostaPrecificacao;
+
+  // Outras plataformas
+  outrasPlataformas: VerificacaoPlataformas;
 
   // Metadados
   dataAnalise: string;
@@ -375,7 +382,13 @@ export async function realizarAnaliseCombinada(
   // 4. Score de redes sociais (placeholder - futuramente integrar APIs)
   const scoreRedes = 50; // Valor padrão até implementar análise real
 
-  // 5. Calcular score geral ponderado
+  // 4.5. Verificar outras plataformas (Apple Maps, Bing)
+  const outrasPlataformas = await verificarOutrasPlataformas(
+    placeDetails.name,
+    placeDetails.address
+  );
+
+  // 5. Calcular score geral ponderado (com bônus de outras plataformas)
   const scoreGeral = Math.round(
     (scoreGBP.total * 0.4) +
     (siteAnalysis.score * 0.35) +
@@ -408,6 +421,8 @@ export async function realizarAnaliseCombinada(
       : scoreGeral < 70
         ? 'Há oportunidades significativas de melhoria'
         : 'Sua presença está boa, mas pode melhorar',
+    appleMaps: outrasPlataformas.appleMaps.encontrado,
+    bingPlaces: outrasPlataformas.bingPlaces.encontrado,
   };
 
   // 9. Gerar argumentos de fechamento
@@ -455,7 +470,8 @@ export async function realizarAnaliseCombinada(
     argumentosFechamento,
     planoAcao,
     proposta,
+    outrasPlataformas,
     dataAnalise: new Date().toISOString(),
-    versaoAnalise: '2.0',
+    versaoAnalise: '2.1',
   };
 }
