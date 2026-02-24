@@ -3,7 +3,7 @@
 // Gera análise completa para CRM interno e score simplificado para cliente
 
 import { getPlaceDetails, PlaceDetails } from "./google";
-import { calculateScore, ScoreResult } from "./scoring";
+import { calculateScore, ScoreBreakdown } from "./scoring";
 import { analisarSite, SiteAnalysis } from "./site-analysis";
 import { gerarProposta, AnaliseInput, PropostaPrecificacao } from "./pricing-agent";
 
@@ -40,7 +40,7 @@ export interface AnaliseInterna {
     rating?: number;
     totalAvaliacoes?: number;
     fotos: number;
-    detalhesScore: ScoreResult;
+    detalhesScore: ScoreBreakdown;
   };
 
   // Dados do Site
@@ -94,7 +94,7 @@ function calcularStatus(score: number): 'bom' | 'regular' | 'critico' {
   return 'critico';
 }
 
-function gerarDiagnosticoGBP(place: PlaceDetails, scoreResult: ScoreResult): DiagnosticoArea {
+function gerarDiagnosticoGBP(place: PlaceDetails, scoreResult: ScoreBreakdown): DiagnosticoArea {
   const itens: DiagnosticoArea['itens'] = [];
 
   // Avaliações
