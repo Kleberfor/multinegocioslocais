@@ -21,6 +21,7 @@ import {
   FileText,
 } from "lucide-react";
 import { LeadActions } from "@/components/admin/lead-actions";
+import { EditProposta } from "@/components/admin/edit-proposta";
 
 type Lead = {
   id: string;
@@ -247,9 +248,16 @@ export default async function LeadDetailPage({
           {proposta && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
-                  Proposta Sugerida
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    Proposta Sugerida
+                  </span>
+                  <EditProposta
+                    leadId={lead.id}
+                    valorSugerido={lead.valorSugerido ? Number(lead.valorSugerido) : null}
+                    proposta={proposta}
+                  />
                 </CardTitle>
               </CardHeader>
               <CardContent>
