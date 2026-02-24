@@ -47,10 +47,16 @@ function DadosContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prospectId = searchParams.get("prospect");
+  const leadId = searchParams.get("lead");
+  const fromAdmin = searchParams.get("from") === "admin";
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlano, setSelectedPlano] = useState<string>("");
   const [prospectData, setProspectData] = useState<any>(null);
+  const [leadData, setLeadData] = useState<any>(null);
+
+  // Se vier de admin com lead, não precisa mostrar seleção de plano
+  const isAdminFlow = fromAdmin && leadId;
 
   const {
     register,
@@ -74,6 +80,28 @@ function DadosContent() {
       // Aqui poderia buscar dados do prospect para pré-preencher
     }
   }, [prospectId, setValue]);
+
+  // Carregar dados do lead se vier do admin
+  useEffect(() => {
+    if (leadId && fromAdmin) {
+      fetch(`/api/leads/${leadId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && !data.error) {
+            setLeadData(data);
+            // Pré-preencher formulário com dados do lead
+            if (data.nome) setValue("nome", data.nome);
+            if (data.email) setValue("email", data.email);
+            if (data.telefone) setValue("telefone", data.telefone);
+            if (data.negocio) setValue("negocio", data.negocio);
+            // Definir plano como customizado (admin)
+            setValue("planoId", "plano-customizado");
+            setSelectedPlano("plano-customizado");
+          }
+        })
+        .catch((err) => console.error("Erro ao carregar lead:", err));
+    }
+  }, [leadId, fromAdmin, setValue]);
 
   // Buscar CEP
   const handleCepBlur = async (cep: string) => {
@@ -386,65 +414,86 @@ function DadosContent() {
             </CardContent>
           </Card>
 
-          {/* Seleção de Plano */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg">
-                <CreditCard className="w-5 h-5 mr-2" />
-                Escolha seu Plano
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                {PLANOS.map((plano) => (
-                  <div
-                    key={plano.id}
-                    onClick={() => {
-                      setSelectedPlano(plano.id);
-                      setValue("planoId", plano.id);
-                    }}
-                    className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedPlano === plano.id
-                        ? "border-primary bg-primary/5"
-                        : "border-muted hover:border-primary/50"
-                    }`}
-                  >
-                    {plano.destaque && (
-                      <span className="absolute -top-2 left-4 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded">
-                        Mais Popular
-                      </span>
-                    )}
-                    <h3 className="font-semibold">{plano.nome}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {plano.descricao}
-                    </p>
-                    <div className="mt-3">
-                      <p className="text-sm">
-                        Implantação:{" "}
-                        <strong>
-                          R$ {plano.implantacao.toLocaleString("pt-BR")}
-                        </strong>
+          {/* Seleção de Plano - Ocultar quando vier do admin */}
+          {!isAdminFlow ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Escolha seu Plano
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {PLANOS.map((plano) => (
+                    <div
+                      key={plano.id}
+                      onClick={() => {
+                        setSelectedPlano(plano.id);
+                        setValue("planoId", plano.id);
+                      }}
+                      className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedPlano === plano.id
+                          ? "border-primary bg-primary/5"
+                          : "border-muted hover:border-primary/50"
+                      }`}
+                    >
+                      {plano.destaque && (
+                        <span className="absolute -top-2 left-4 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded">
+                          Mais Popular
+                        </span>
+                      )}
+                      <h3 className="font-semibold">{plano.nome}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {plano.descricao}
                       </p>
-                      <p className="text-sm">
-                        + {plano.parcelas}x de{" "}
-                        <strong>
-                          R$ {plano.mensalidade.toLocaleString("pt-BR")}
-                        </strong>
-                      </p>
-                      <p className="text-lg font-bold text-primary mt-2">
-                        Total: R$ {plano.total.toLocaleString("pt-BR")}
-                      </p>
+                      <div className="mt-3">
+                        <p className="text-sm">
+                          Implantação:{" "}
+                          <strong>
+                            R$ {plano.implantacao.toLocaleString("pt-BR")}
+                          </strong>
+                        </p>
+                        <p className="text-sm">
+                          + {plano.parcelas}x de{" "}
+                          <strong>
+                            R$ {plano.mensalidade.toLocaleString("pt-BR")}
+                          </strong>
+                        </p>
+                        <p className="text-lg font-bold text-primary mt-2">
+                          Total: R$ {plano.total.toLocaleString("pt-BR")}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              {errors.planoId && (
-                <p className="text-sm text-destructive mt-2">
-                  {errors.planoId.message}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+                {errors.planoId && (
+                  <p className="text-sm text-destructive mt-2">
+                    {errors.planoId.message}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Proposta Negociada
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="p-4 rounded-lg border-2 border-primary bg-primary/5">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Valor negociado com o cliente:
+                  </p>
+                  <p className="text-2xl font-bold text-primary">
+                    R$ {Number(leadData?.valorSugerido || 0).toLocaleString("pt-BR")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Submit */}
           <div className="flex justify-between">
