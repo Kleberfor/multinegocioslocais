@@ -2,87 +2,77 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { getScoreDescription } from "@/lib/scoring";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   MapPin,
   Phone,
-  Globe,
-  Star,
-  CheckCircle,
-  XCircle,
+  TrendingDown,
   AlertTriangle,
-  ArrowRight,
-  Info,
-  Camera,
-  MessageSquare,
-  FileText,
-  Shield,
-  Lightbulb,
+  MessageCircle,
 } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-const categoryIcons: Record<string, any> = {
-  info: Info,
-  photos: Camera,
-  engagement: MessageSquare,
-  content: FileText,
-  trust: Shield,
-};
-
-const priorityColors: Record<string, string> = {
-  critical: "bg-red-100 text-red-800 border-red-200",
-  high: "bg-orange-100 text-orange-800 border-orange-200",
-  medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  low: "bg-gray-100 text-gray-800 border-gray-200",
-};
-
-const priorityLabels: Record<string, string> = {
-  critical: "Crítico",
-  high: "Alta",
-  medium: "Média",
-  low: "Baixa",
-};
-
 export default async function ResultadoPage({ params }: PageProps) {
   const { id } = await params;
 
+  // Tentar buscar como Lead primeiro (novo fluxo)
+  const lead = await prisma.lead.findUnique({
+    where: { id },
+  });
+
+  if (lead) {
+    // Renderizar resultado simplificado para Lead
+    return <ResultadoLead lead={lead} />;
+  }
+
+  // Se não for Lead, tentar como Prospect (fluxo antigo - manter compatibilidade)
   const prospect = await prisma.prospect.findUnique({
     where: { id },
   });
 
-  if (!prospect) {
-    notFound();
+  if (prospect) {
+    // Redirecionar para fluxo antigo ou mostrar versão simplificada
+    return <ResultadoProspectSimplificado prospect={prospect} />;
   }
 
-  const analise = prospect.analise as {
-    place: any;
-    score: {
-      total: number;
-      grade: string;
-      categories: any[];
-      criticalIssues: any[];
-      opportunities: any[];
-      strengths: string[];
-      summary: {
-        totalChecks: number;
-        passedChecks: number;
-        criticalPassed: number;
-        criticalTotal: number;
-      };
-    };
+  notFound();
+}
+
+// Componente para resultado de Lead (novo fluxo - apenas scores)
+function ResultadoLead({ lead }: { lead: any }) {
+  const scoreGeral = lead.scoreGeral || 0;
+  const scoreGBP = lead.scoreGBP || 0;
+  const scoreSite = lead.scoreSite || 0;
+  const scoreRedes = lead.scoreRedes || 0;
+
+  // Calcular perda estimada
+  const perdaEstimada = Math.round((100 - scoreGeral) * 120);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return "text-green-600 border-green-500 bg-green-50";
+    if (score >= 40) return "text-yellow-600 border-yellow-500 bg-yellow-50";
+    return "text-red-600 border-red-500 bg-red-50";
   };
 
-  const { place, score } = analise;
-  const scoreInfo = getScoreDescription(score.total);
+  const getScoreLabel = (score: number) => {
+    if (score >= 70) return "Bom";
+    if (score >= 40) return "Regular";
+    return "Crítico";
+  };
+
+  const getBarColor = (score: number) => {
+    if (score >= 70) return "bg-green-500";
+    if (score >= 40) return "bg-yellow-500";
+    return "bg-red-500";
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
-      <div className="container py-8">
+      <div className="container py-8 max-w-3xl">
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/">
@@ -96,363 +86,356 @@ export default async function ResultadoPage({ params }: PageProps) {
           </Link>
         </div>
 
-        {/* Business Info + Score */}
-        <div className="max-w-5xl mx-auto mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-                {/* Business Info */}
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold">{place.name}</h1>
-                  <div className="flex items-center text-muted-foreground mt-1">
-                    <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                    <span className="line-clamp-1">{place.address}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                    {place.phoneNumber && (
-                      <div className="flex items-center">
-                        <Phone className="w-4 h-4 mr-1" />
-                        {place.phoneNumber}
-                      </div>
-                    )}
-                    {place.website && (
-                      <div className="flex items-center">
-                        <Globe className="w-4 h-4 mr-1" />
-                        <a
-                          href={place.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          Ver site
-                        </a>
-                      </div>
-                    )}
-                    {place.rating && (
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 mr-1 text-yellow-500 fill-yellow-500" />
-                        {place.rating} ({place.userRatingsTotal} avaliações)
-                      </div>
-                    )}
-                  </div>
-                </div>
+        {/* Score Principal */}
+        <Card className="mb-6">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-xl font-semibold text-muted-foreground mb-2">
+              Seu Score de Visibilidade Digital
+            </h1>
 
-                {/* Score Display */}
-                <div className="flex flex-col items-center lg:items-end">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-24 h-24 rounded-full border-8 ${
-                        score.total >= 80
-                          ? "border-green-500"
-                          : score.total >= 60
-                          ? "border-blue-500"
-                          : score.total >= 40
-                          ? "border-yellow-500"
-                          : "border-red-500"
-                      } flex items-center justify-center`}
-                    >
-                      <span className="text-3xl font-bold">{score.total}</span>
-                    </div>
-                    <div className="text-center lg:text-right">
-                      <div
-                        className={`text-2xl font-bold ${
-                          score.total >= 80
-                            ? "text-green-500"
-                            : score.total >= 60
-                            ? "text-blue-500"
-                            : score.total >= 40
-                            ? "text-yellow-500"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {score.grade}
-                      </div>
-                      <div className={`font-semibold ${scoreInfo.color}`}>
-                        {scoreInfo.label}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-3 max-w-sm text-center lg:text-right">
-                    {score.summary.passedChecks} de {score.summary.totalChecks}{" "}
-                    verificações passaram
-                  </p>
+            <div className="flex justify-center mb-4">
+              <div
+                className={`w-32 h-32 rounded-full border-8 flex flex-col items-center justify-center ${getScoreColor(scoreGeral)}`}
+              >
+                <span className="text-4xl font-bold">{scoreGeral}</span>
+                <span className="text-sm font-medium">/100</span>
+              </div>
+            </div>
+
+            <div
+              className={`inline-block px-4 py-1 rounded-full text-sm font-semibold mb-4 ${getScoreColor(scoreGeral)}`}
+            >
+              {getScoreLabel(scoreGeral)}
+            </div>
+
+            <p className="text-muted-foreground max-w-md mx-auto">
+              {scoreGeral < 50
+                ? "Sua presença digital precisa de atenção urgente. Você está perdendo clientes todos os dias."
+                : scoreGeral < 70
+                  ? "Há oportunidades significativas de melhoria que podem aumentar suas vendas."
+                  : "Sua presença está boa, mas ainda há espaço para crescer."}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Negócio */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold">{lead.negocio}</p>
+                <p className="text-sm text-muted-foreground">{lead.enderecoGoogle}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Scores por Área */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <h2 className="font-semibold mb-4">Análise por Área</h2>
+
+            <div className="space-y-4">
+              {/* Google Business */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Google Business Profile</span>
+                  <span className={`font-semibold ${scoreGBP >= 70 ? "text-green-600" : scoreGBP >= 40 ? "text-yellow-600" : "text-red-600"}`}>
+                    {scoreGBP}/100
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getBarColor(scoreGBP)} transition-all`}
+                    style={{ width: `${scoreGBP}%` }}
+                  />
                 </div>
               </div>
 
-              <p className="mt-4 text-muted-foreground border-t pt-4">
-                {scoreInfo.description}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              {/* Site */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Site</span>
+                  <span className={`font-semibold ${scoreSite >= 70 ? "text-green-600" : scoreSite >= 40 ? "text-yellow-600" : "text-red-600"}`}>
+                    {lead.siteUrl ? `${scoreSite}/100` : "Sem site"}
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getBarColor(scoreSite)} transition-all`}
+                    style={{ width: `${scoreSite}%` }}
+                  />
+                </div>
+              </div>
 
-        {/* Critical Issues Alert */}
-        {score.criticalIssues && score.criticalIssues.length > 0 && (
-          <div className="max-w-5xl mx-auto mb-6">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-red-800">
-                    {score.criticalIssues.length} Problema(s) Crítico(s)
-                    Encontrado(s)
-                  </h3>
-                  <p className="text-sm text-red-700 mt-1">
-                    Estes itens são essenciais e devem ser corrigidos
-                    imediatamente para melhorar sua visibilidade no Google.
-                  </p>
-                  <ul className="mt-2 space-y-1">
-                    {score.criticalIssues.slice(0, 3).map((issue: any, i: number) => (
-                      <li key={i} className="text-sm text-red-700 flex items-center">
-                        <XCircle className="w-4 h-4 mr-2" />
-                        {issue.guideline.title}
-                      </li>
-                    ))}
-                  </ul>
+              {/* Redes Sociais */}
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Redes Sociais</span>
+                  <span className={`font-semibold ${scoreRedes >= 70 ? "text-green-600" : scoreRedes >= 40 ? "text-yellow-600" : "text-red-600"}`}>
+                    {scoreRedes}/100
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getBarColor(scoreRedes)} transition-all`}
+                    style={{ width: `${scoreRedes}%` }}
+                  />
                 </div>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+
+        {/* Alerta de Perda */}
+        {scoreGeral < 70 && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <TrendingDown className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-red-800 mb-1">
+                    Você está perdendo clientes
+                  </h3>
+                  <p className="text-red-700 text-sm mb-2">
+                    Com base na sua análise, estimamos que você está deixando de
+                    faturar aproximadamente:
+                  </p>
+                  <p className="text-3xl font-bold text-red-600">
+                    R$ {perdaEstimada.toLocaleString("pt-BR")}/mês
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    *Estimativa baseada no seu segmento e score atual
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Categories Grid */}
-        <div className="max-w-5xl mx-auto mb-8">
-          <h2 className="text-xl font-bold mb-4">Análise por Categoria</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {score.categories.map((category: any) => {
-              const Icon = categoryIcons[category.name] || Info;
-              return (
-                <Card key={category.name}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-base">
-                      <span className="flex items-center">
-                        <Icon className="w-5 h-5 mr-2 text-primary" />
-                        {category.displayName}
-                      </span>
-                      <span
-                        className={`text-lg font-bold ${
-                          category.status === "excellent"
-                            ? "text-green-600"
-                            : category.status === "good"
-                            ? "text-blue-600"
-                            : category.status === "average"
-                            ? "text-yellow-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {category.score}/{category.maxScore}
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Progress bar */}
-                    <div className="w-full bg-muted rounded-full h-2 mb-3">
-                      <div
-                        className={`h-2 rounded-full transition-all ${
-                          category.status === "excellent"
-                            ? "bg-green-500"
-                            : category.status === "good"
-                            ? "bg-blue-500"
-                            : category.status === "average"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                        }`}
-                        style={{ width: `${category.percentage}%` }}
-                      />
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {category.passedCount} de {category.totalCount} itens OK
-                    </p>
-
-                    {/* Check items */}
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                      {category.checks.slice(0, 5).map((check: any, i: number) => (
-                        <div
-                          key={i}
-                          className="flex items-start text-sm"
-                        >
-                          {check.passed ? (
-                            <CheckCircle className="w-4 h-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
-                          ) : (
-                            <XCircle className="w-4 h-4 mr-2 text-red-400 flex-shrink-0 mt-0.5" />
-                          )}
-                          <span
-                            className={
-                              check.passed
-                                ? "text-muted-foreground"
-                                : "text-foreground"
-                            }
-                          >
-                            {check.guideline.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="max-w-5xl mx-auto grid gap-6 lg:grid-cols-2 mb-8">
-          {/* Strengths */}
-          {score.strengths && score.strengths.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-green-600">
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  Pontos Fortes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {score.strengths.map((strength: string, index: number) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
-                      <span>{strength}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Info className="w-5 h-5 mr-2" />
-                Resumo da Análise
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold text-primary">
-                    {score.summary.passedChecks}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Itens OK</div>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold text-red-500">
-                    {score.summary.totalChecks - score.summary.passedChecks}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    A Melhorar
-                  </div>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {score.summary.criticalPassed}/{score.summary.criticalTotal}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Críticos OK
-                  </div>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold">{place.photos || 0}</div>
-                  <div className="text-sm text-muted-foreground">Fotos</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Opportunities */}
-        <div className="max-w-5xl mx-auto mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Lightbulb className="w-5 h-5 mr-2 text-yellow-500" />
-                Oportunidades de Melhoria
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {score.opportunities.slice(0, 8).map((opp: any, index: number) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-lg border ${priorityColors[opp.priority]}`}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded font-medium ${priorityColors[opp.priority]}`}
-                          >
-                            {priorityLabels[opp.priority]}
-                          </span>
-                          <h4 className="font-semibold">{opp.title}</h4>
-                        </div>
-                        <p className="text-sm opacity-80">{opp.description}</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-current/10">
-                      <p className="text-sm">
-                        <strong>Como resolver:</strong> {opp.howToFix}
-                      </p>
-                      <p className="text-sm mt-1">
-                        <strong>Impacto:</strong> {opp.impact}
-                      </p>
-                      {opp.googleTip && (
-                        <p className="text-sm mt-1 italic">
-                          💡 Dica do Google: {opp.googleTip}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {score.opportunities.length > 8 && (
-                <p className="text-center text-muted-foreground mt-4">
-                  + {score.opportunities.length - 8} outras oportunidades
+        {/* Problemas Identificados (sem detalhes) */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold">Problemas Identificados</h3>
+                <p className="text-sm text-muted-foreground">
+                  Nossa análise encontrou pontos de melhoria que estão afetando sua visibilidade.
                 </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {scoreGBP < 70 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span>Seu Google Business Profile precisa de otimização</span>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+              {scoreSite < 50 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span>{lead.siteUrl ? "Seu site tem problemas de performance" : "Você não possui site profissional"}</span>
+                </div>
+              )}
+              {scoreRedes < 50 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                  <span>Sua presença em redes sociais pode melhorar</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                <span>Há oportunidades para aumentar suas avaliações</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-4 italic">
+              Os detalhes completos e o plano de ação serão apresentados por nosso especialista.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* CTA */}
-        <div className="max-w-5xl mx-auto mb-8">
-          <Card className="bg-primary text-primary-foreground">
-            <CardContent className="p-8 text-center">
-              <h2 className="text-2xl font-bold mb-2">
-                Quer melhorar sua presença digital?
-              </h2>
-              <p className="opacity-90 mb-6 max-w-2xl mx-auto">
-                Nossa equipe especializada pode implementar todas essas
-                melhorias baseadas nas diretrizes oficiais do Google para você
-                atrair mais clientes.
-              </p>
-              <Link href={`/contratar/dados?prospect=${id}`}>
-                <Button size="lg" variant="secondary" className="font-semibold">
-                  Quero Melhorar Meu Negócio
-                  <ArrowRight className="w-4 h-4 ml-2" />
+        <Card className="bg-primary text-primary-foreground">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-2">
+              Quer resolver esses problemas?
+            </h2>
+            <p className="opacity-90 mb-6">
+              Nossa equipe de especialistas vai entrar em contato para apresentar
+              um plano personalizado para melhorar sua presença digital.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <a
+                href={`https://wa.me/5511999999999?text=Olá! Fiz a análise do meu negócio ${lead.negocio} e gostaria de saber mais sobre como melhorar minha presença digital.`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto font-semibold">
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Falar com Especialista
                 </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+              </a>
+            </div>
+
+            <p className="text-sm opacity-70 mt-4">
+              <Phone className="w-4 h-4 inline mr-1" />
+              Entraremos em contato em até 24 horas úteis
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Footer */}
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            Análise baseada nas{" "}
-            <a
-              href="https://support.google.com/business/answer/7667250"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Diretrizes Oficiais do Google Business Profile
-            </a>
-          </p>
+        <div className="text-center mt-8">
           <Link
             href="/analisar"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground text-sm"
+          >
+            ← Analisar outro negócio
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Componente para resultado de Prospect (fluxo antigo - versão simplificada)
+function ResultadoProspectSimplificado({ prospect }: { prospect: any }) {
+  const analise = prospect.analise as any;
+  const score = analise?.score?.total || prospect.score || 0;
+
+  const getScoreColor = (s: number) => {
+    if (s >= 70) return "text-green-600 border-green-500 bg-green-50";
+    if (s >= 40) return "text-yellow-600 border-yellow-500 bg-yellow-50";
+    return "text-red-600 border-red-500 bg-red-50";
+  };
+
+  const getScoreLabel = (s: number) => {
+    if (s >= 70) return "Bom";
+    if (s >= 40) return "Regular";
+    return "Crítico";
+  };
+
+  const perdaEstimada = Math.round((100 - score) * 120);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
+      <div className="container py-8 max-w-3xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link href="/">
+            <Image
+              src="/logo.png"
+              alt="MultiNegócios Locais"
+              width={180}
+              height={40}
+              className="h-10 w-auto mx-auto mb-6"
+            />
+          </Link>
+        </div>
+
+        {/* Score Principal */}
+        <Card className="mb-6">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-xl font-semibold text-muted-foreground mb-2">
+              Seu Score de Visibilidade Digital
+            </h1>
+
+            <div className="flex justify-center mb-4">
+              <div
+                className={`w-32 h-32 rounded-full border-8 flex flex-col items-center justify-center ${getScoreColor(score)}`}
+              >
+                <span className="text-4xl font-bold">{score}</span>
+                <span className="text-sm font-medium">/100</span>
+              </div>
+            </div>
+
+            <div
+              className={`inline-block px-4 py-1 rounded-full text-sm font-semibold mb-4 ${getScoreColor(score)}`}
+            >
+              {getScoreLabel(score)}
+            </div>
+
+            <p className="text-muted-foreground max-w-md mx-auto">
+              {score < 50
+                ? "Sua presença digital precisa de atenção urgente."
+                : score < 70
+                  ? "Há oportunidades significativas de melhoria."
+                  : "Sua presença está boa, mas ainda há espaço para crescer."}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Negócio */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold">{prospect.nome}</p>
+                <p className="text-sm text-muted-foreground">{analise?.place?.address}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Alerta de Perda */}
+        {score < 70 && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <TrendingDown className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-red-800 mb-1">
+                    Você está perdendo clientes
+                  </h3>
+                  <p className="text-red-700 text-sm mb-2">
+                    Estimamos que você está deixando de faturar aproximadamente:
+                  </p>
+                  <p className="text-3xl font-bold text-red-600">
+                    R$ {perdaEstimada.toLocaleString("pt-BR")}/mês
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* CTA */}
+        <Card className="bg-primary text-primary-foreground">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-2">
+              Quer melhorar sua presença digital?
+            </h2>
+            <p className="opacity-90 mb-6">
+              Deixe seus dados para receber uma proposta personalizada.
+            </p>
+
+            <Link href={`/contratar/dados?prospect=${prospect.id}`}>
+              <Button size="lg" variant="secondary" className="font-semibold">
+                Quero Melhorar Meu Negócio
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <Link
+            href="/analisar"
+            className="text-muted-foreground hover:text-foreground text-sm"
           >
             ← Analisar outro negócio
           </Link>
