@@ -74,9 +74,40 @@ function normalizarUrl(url: string): string {
 }
 
 /**
- * Analisa site usando PageSpeed Insights API
+ * Verifica se o site está acessível e coleta informações básicas
  */
-async function analisarComPageSpeed(url: string): Promise<any> {
+async function verificarSiteBasico(url: string): Promise<{
+  acessivel: boolean;
+  temHttps: boolean;
+  tempoResposta: number;
+}> {
+  const inicio = Date.now();
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000), // 10 segundos timeout
+    });
+    const tempoResposta = Date.now() - inicio;
+    return {
+      acessivel: response.ok,
+      temHttps: url.startsWith('https://'),
+      tempoResposta,
+    };
+  } catch {
+    return {
+      acessivel: false,
+      temHttps: url.startsWith('https://'),
+      tempoResposta: Date.now() - inicio,
+    };
+  }
+}
+
+/**
+ * Analisa site usando PageSpeed Insights API
+ * Retorna null se a API falhar (para usar fallback)
+ */
+async function analisarComPageSpeed(url: string): Promise<any | null> {
   const apiKey = process.env.GOOGLE_PAGESPEED_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
 
   console.log('[PageSpeed] Analisando URL:', url);
@@ -97,18 +128,30 @@ async function analisarComPageSpeed(url: string): Promise<any> {
   const fullUrl = `${PAGESPEED_API_URL}?${params}`;
   console.log('[PageSpeed] Request URL:', fullUrl.replace(apiKey || '', '***'));
 
-  const response = await fetch(fullUrl);
+  try {
+    const response = await fetch(fullUrl);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[PageSpeed] Erro:', response.status, errorText);
-    throw new Error(`PageSpeed API error: ${response.status} - ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[PageSpeed] Erro:', response.status, errorText);
+
+      // Se for erro de quota ou API não habilitada, retornar null para usar fallback
+      if (response.status === 429 || response.status === 403) {
+        console.log('[PageSpeed] API indisponível, usando análise básica');
+        return null;
+      }
+
+      throw new Error(`PageSpeed API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[PageSpeed] Score recebido:', data.lighthouseResult?.categories?.performance?.score);
+
+    return data;
+  } catch (error) {
+    console.error('[PageSpeed] Erro na requisição:', error);
+    return null;
   }
-
-  const data = await response.json();
-  console.log('[PageSpeed] Score recebido:', data.lighthouseResult?.categories?.performance?.score);
-
-  return data;
 }
 
 /**
@@ -308,8 +351,106 @@ export async function analisarSite(url: string): Promise<SiteAnalysis> {
     const urlFinal = normalizarUrl(url);
     console.log('[analisarSite] URL normalizada:', urlFinal);
 
-    // Analisar com PageSpeed Insights (direto, sem verificação prévia)
+    // Primeiro, verificar se o site está acessível
+    const verificacaoBasica = await verificarSiteBasico(urlFinal);
+    console.log('[analisarSite] Verificação básica:', verificacaoBasica);
+
+    if (!verificacaoBasica.acessivel) {
+      return {
+        url: urlFinal,
+        score: 0,
+        temSite: false,
+        performance: {
+          score: 0,
+          lcp: 0,
+          fid: 0,
+          cls: 0,
+          fcp: 0,
+          ttfb: verificacaoBasica.tempoResposta,
+        },
+        accessibility: 0,
+        bestPractices: 0,
+        seo: 0,
+        diagnostico: [{
+          categoria: 'performance',
+          severidade: 'critico',
+          titulo: 'Site inacessível',
+          descricao: `Não foi possível acessar ${urlFinal}`,
+          impacto: 'Clientes não conseguem ver informações da empresa',
+          comoResolver: 'Verificar se o domínio está ativo e a hospedagem funcionando',
+        }],
+        isHttps: verificacaoBasica.temHttps,
+        isMobileFriendly: false,
+        isIndexed: false,
+      };
+    }
+
+    // Tentar analisar com PageSpeed Insights
     const pageSpeedData = await analisarComPageSpeed(urlFinal);
+
+    // Se PageSpeed não disponível, usar análise básica
+    if (!pageSpeedData) {
+      console.log('[analisarSite] Usando análise básica (fallback)');
+
+      // Calcular score básico baseado no tempo de resposta e HTTPS
+      let scoreBasico = 50; // Score base
+      if (verificacaoBasica.temHttps) scoreBasico += 15;
+      if (verificacaoBasica.tempoResposta < 1000) scoreBasico += 20;
+      else if (verificacaoBasica.tempoResposta < 2000) scoreBasico += 10;
+      else if (verificacaoBasica.tempoResposta > 5000) scoreBasico -= 15;
+
+      const diagnosticoBasico: DiagnosticoItem[] = [];
+
+      if (!verificacaoBasica.temHttps) {
+        diagnosticoBasico.push({
+          categoria: 'seguranca',
+          severidade: 'critico',
+          titulo: 'Site sem HTTPS',
+          descricao: 'O site não usa certificado SSL/HTTPS',
+          impacto: 'Google penaliza sites sem HTTPS no ranking',
+          comoResolver: 'Instalar certificado SSL (muitas hospedagens oferecem grátis)',
+        });
+      }
+
+      if (verificacaoBasica.tempoResposta > 3000) {
+        diagnosticoBasico.push({
+          categoria: 'performance',
+          severidade: 'importante',
+          titulo: 'Tempo de resposta alto',
+          descricao: `O servidor demorou ${(verificacaoBasica.tempoResposta / 1000).toFixed(1)}s para responder`,
+          impacto: 'Sites lentos perdem visitantes e ranqueamento no Google',
+          comoResolver: 'Melhorar hospedagem ou otimizar o site',
+        });
+      }
+
+      return {
+        url: urlFinal,
+        score: scoreBasico,
+        temSite: true,
+        performance: {
+          score: scoreBasico,
+          lcp: verificacaoBasica.tempoResposta * 2, // Estimativa
+          fid: 100,
+          cls: 0.1,
+          fcp: verificacaoBasica.tempoResposta,
+          ttfb: verificacaoBasica.tempoResposta,
+        },
+        accessibility: 60, // Valor padrão
+        bestPractices: verificacaoBasica.temHttps ? 70 : 40,
+        seo: 50, // Valor padrão
+        diagnostico: diagnosticoBasico.length > 0 ? diagnosticoBasico : [{
+          categoria: 'performance',
+          severidade: 'info',
+          titulo: 'Análise básica realizada',
+          descricao: 'Análise completa indisponível temporariamente',
+          impacto: 'Recomendamos uma nova análise em breve',
+          comoResolver: 'Aguardar e tentar novamente',
+        }],
+        isHttps: verificacaoBasica.temHttps,
+        isMobileFriendly: true, // Assumir que sim
+        isIndexed: null,
+      };
+    }
 
     const categories = pageSpeedData.lighthouseResult?.categories || {};
 
