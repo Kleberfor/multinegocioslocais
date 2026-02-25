@@ -145,14 +145,16 @@ function DadosContent() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Erro ao salvar dados");
+        const errorMsg = result.details || result.error || "Erro ao salvar dados";
+        throw new Error(errorMsg);
       }
 
       // Redirecionar para página de contrato
       router.push(`/contratar/contrato?cliente=${result.id}`);
     } catch (error) {
       console.error("Erro:", error);
-      alert("Erro ao salvar dados. Tente novamente.");
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      alert(`Erro ao salvar dados: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
