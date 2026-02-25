@@ -342,6 +342,8 @@ function ResultadoLead({ lead }: { lead: any }) {
               temSite={!!lead.siteUrl}
               perdaEstimada={perdaEstimada}
               whatsappNumero="5511916682510"
+              leadId={lead.id}
+              temProposta={!!lead.proposta}
             />
 
             <p className="text-sm opacity-70 mt-4">

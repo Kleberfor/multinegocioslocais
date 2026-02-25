@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Share2 } from "lucide-react";
+import { MessageCircle, Share2, FileText } from "lucide-react";
 import { BotaoDownloadPDF } from "./relatorio-pdf";
 
 interface AcoesResultadoProps {
@@ -14,6 +15,8 @@ interface AcoesResultadoProps {
   temSite: boolean;
   perdaEstimada: number;
   whatsappNumero: string;
+  leadId?: string;
+  temProposta?: boolean;
 }
 
 export function AcoesResultado({
@@ -26,6 +29,8 @@ export function AcoesResultado({
   temSite,
   perdaEstimada,
   whatsappNumero,
+  leadId,
+  temProposta,
 }: AcoesResultadoProps) {
   const mensagemWhatsApp = encodeURIComponent(
     `Olá! Fiz a análise do meu negócio ${negocio} e gostaria de saber mais sobre como melhorar minha presença digital.`
@@ -43,12 +48,20 @@ export function AcoesResultado({
     <div className="flex flex-col gap-4">
       {/* Botões principais */}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        {temProposta && leadId && (
+          <Link href={`/proposta/${leadId}`}>
+            <Button size="lg" variant="secondary" className="w-full sm:w-auto font-semibold">
+              <FileText className="w-5 h-5 mr-2" />
+              Ver Proposta Personalizada
+            </Button>
+          </Link>
+        )}
         <a
           href={`https://wa.me/${whatsappNumero}?text=${mensagemWhatsApp}`}
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Button size="lg" variant="secondary" className="w-full sm:w-auto font-semibold">
+          <Button size="lg" variant={temProposta ? "outline" : "secondary"} className="w-full sm:w-auto font-semibold bg-white/20 border-white/50 text-white hover:bg-white/30">
             <MessageCircle className="w-5 h-5 mr-2" />
             Falar com Especialista
           </Button>
