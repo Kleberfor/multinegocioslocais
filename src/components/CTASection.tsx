@@ -18,13 +18,13 @@ export function CTASection() {
           </div>
 
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Pronto para descobrir seu score?
+            Cada dia sem otimização = clientes perdidos
           </h2>
 
-          <p className="mt-4 text-lg opacity-90">
-            Análise gratuita e sem compromisso. Veja agora mesmo como está a
-            presença digital do seu negócio e receba recomendações
-            personalizadas.
+          <p className="mt-4 text-lg opacity-90 max-w-xl mx-auto">
+            Enquanto você espera, seus concorrentes estão capturando os clientes
+            que deveriam ser seus. Descubra seu score em 2 minutos e veja exatamente
+            o que está perdendo.
           </p>
 
           <div className="mt-8">
@@ -32,15 +32,16 @@ export function CTASection() {
               <Button
                 size="lg"
                 variant="secondary"
-                className="text-lg px-8 font-semibold"
+                className="text-lg px-8 h-14 font-semibold shadow-lg hover:shadow-xl transition-all"
               >
-                Analisar Meu Negócio Agora
+                Descobrir Meu Score Agora
               </Button>
             </Link>
           </div>
 
-          <p className="mt-4 text-sm opacity-75">
-            Mais de 500 negócios já analisaram sua presença digital
+          <p className="mt-4 text-sm opacity-75 flex items-center justify-center gap-2">
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            2 minutos para descobrir quanto você está perdendo
           </p>
         </div>
       </div>

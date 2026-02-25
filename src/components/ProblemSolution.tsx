@@ -1,19 +1,19 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 const problems = [
-  "Clientes nao te encontram no Google",
-  "Poucas avaliacoes ou nota baixa",
-  "Perfil incompleto ou desatualizado",
-  "Site lento ou sem site",
-  "Concorrentes aparecendo na sua frente",
+  "Clientes procuram seu serviço mas encontram o concorrente",
+  "Poucas avaliações fazem parecer que você é novo no mercado",
+  "Perfil incompleto passa impressão de negócio abandonado",
+  "Site lento faz 53% dos visitantes desistirem",
+  "Você não sabe quantos clientes está perdendo por dia",
 ];
 
 const solutions = [
-  "Apareca no topo das buscas locais",
-  "Mais avaliacoes positivas e nota alta",
-  "Perfil completo e atrativo",
-  "Site rapido e otimizado",
-  "Destaque-se da concorrencia",
+  "Apareça no topo quando clientes buscarem seu serviço",
+  "Mais avaliações positivas geram confiança instantânea",
+  "Perfil completo converte 7x mais visitantes em clientes",
+  "Site rápido e otimizado para celular",
+  "Dashboard com métricas reais de performance",
 ];
 
 export function ProblemSolution() {
@@ -22,10 +22,11 @@ export function ProblemSolution() {
       <div className="container">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Sua presenca digital esta te ajudando ou atrapalhando?
+            97% dos consumidores pesquisam online antes de comprar local
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Muitos negocios perdem clientes todos os dias por problemas simples de resolver
+            Enquanto você lê isso, clientes estão buscando seu serviço no Google.
+            A pergunta é: eles estão encontrando você ou seu concorrente?
           </p>
         </div>
 
@@ -34,7 +35,7 @@ export function ProblemSolution() {
           <div className="bg-red-50 border border-red-100 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-6">
               <AlertTriangle className="w-6 h-6 text-red-600" />
-              <h3 className="text-xl font-semibold text-red-900">Sinais de Alerta</h3>
+              <h3 className="text-xl font-semibold text-red-900">O Problema</h3>
             </div>
             <ul className="space-y-3">
               {problems.map((problem, index) => (
@@ -52,7 +53,7 @@ export function ProblemSolution() {
           <div className="bg-green-50 border border-green-100 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-6">
               <CheckCircle2 className="w-6 h-6 text-green-600" />
-              <h3 className="text-xl font-semibold text-green-900">O Que Voce Ganha</h3>
+              <h3 className="text-xl font-semibold text-green-900">A Solução</h3>
             </div>
             <ul className="space-y-3">
               {solutions.map((solution, index) => (
