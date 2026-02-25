@@ -54,6 +54,7 @@ function DadosContent() {
   const [selectedPlano, setSelectedPlano] = useState<string>("");
   const [prospectData, setProspectData] = useState<any>(null);
   const [leadData, setLeadData] = useState<any>(null);
+  const [valorCustomizado, setValorCustomizado] = useState<string>("");
 
   // Se vier de admin com lead, não precisa mostrar seleção de plano
   const isAdminFlow = fromAdmin && leadId;
@@ -414,23 +415,24 @@ function DadosContent() {
             </CardContent>
           </Card>
 
-          {/* Seleção de Plano - Ocultar quando vier do admin */}
-          {!isAdminFlow ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Escolha seu Plano
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
+          {/* Seleção de Plano */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <CreditCard className="w-5 h-5 mr-2" />
+                {isAdminFlow ? "Valor do Contrato" : "Escolha seu Plano"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!isAdminFlow && (
+                <div className="grid gap-4 md:grid-cols-2 mb-4">
                   {PLANOS.map((plano) => (
                     <div
                       key={plano.id}
                       onClick={() => {
                         setSelectedPlano(plano.id);
                         setValue("planoId", plano.id);
+                        setValorCustomizado("");
                       }}
                       className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         selectedPlano === plano.id
@@ -467,33 +469,54 @@ function DadosContent() {
                     </div>
                   ))}
                 </div>
-                {errors.planoId && (
-                  <p className="text-sm text-destructive mt-2">
-                    {errors.planoId.message}
+              )}
+
+              {/* Opção de valor personalizado */}
+              <div className={`p-4 rounded-lg border-2 ${
+                selectedPlano === "plano-customizado" || isAdminFlow
+                  ? "border-primary bg-primary/5"
+                  : "border-muted"
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold">
+                      {isAdminFlow ? "Valor Negociado" : "Valor Personalizado"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isAdminFlow
+                        ? "Valor acordado na negociação"
+                        : "Digite um valor diferente dos planos acima"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-medium">R$</span>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 5000"
+                    value={valorCustomizado || (isAdminFlow ? leadData?.valorSugerido || "" : "")}
+                    onChange={(e) => {
+                      setValorCustomizado(e.target.value);
+                      setSelectedPlano("plano-customizado");
+                      setValue("planoId", "plano-customizado");
+                    }}
+                    className="text-lg font-medium"
+                  />
+                </div>
+                {valorCustomizado && (
+                  <p className="text-lg font-bold text-primary mt-2">
+                    Total: R$ {Number(valorCustomizado).toLocaleString("pt-BR")}
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Proposta Negociada
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="p-4 rounded-lg border-2 border-primary bg-primary/5">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Valor negociado com o cliente:
-                  </p>
-                  <p className="text-2xl font-bold text-primary">
-                    R$ {Number(leadData?.valorSugerido || 0).toLocaleString("pt-BR")}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+
+              {errors.planoId && (
+                <p className="text-sm text-destructive mt-2">
+                  {errors.planoId.message}
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Submit */}
           <div className="flex justify-between">

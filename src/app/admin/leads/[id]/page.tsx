@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { LeadActions } from "@/components/admin/lead-actions";
 import { EditProposta } from "@/components/admin/edit-proposta";
+import { EditObservacoes } from "@/components/admin/edit-observacoes";
 
 type Lead = {
   id: string;
@@ -424,9 +425,7 @@ export default async function LeadDetailPage({
               <CardTitle className="text-lg">Observações</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {lead.observacoes || "Nenhuma observação registrada"}
-              </p>
+              <EditObservacoes leadId={lead.id} observacoes={lead.observacoes} />
             </CardContent>
           </Card>
         </div>

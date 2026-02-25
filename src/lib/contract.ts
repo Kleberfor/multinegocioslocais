@@ -1,11 +1,13 @@
 // Geração de Contrato
 // S-3.2: Template e geração de contrato
 
-// Dados da empresa contratada (via variáveis de ambiente)
+// Dados da empresa contratada
+// IMPORTANTE: Configure as variáveis de ambiente em produção:
+// EMPRESA_RAZAO_SOCIAL, EMPRESA_CNPJ, EMPRESA_ENDERECO
 const EMPRESA = {
-  razaoSocial: process.env.EMPRESA_RAZAO_SOCIAL || "MultiNegócios Locais Ltda",
-  cnpj: process.env.EMPRESA_CNPJ || "00.000.000/0001-00",
-  endereco: process.env.EMPRESA_ENDERECO || "São Paulo/SP",
+  razaoSocial: process.env.EMPRESA_RAZAO_SOCIAL || process.env.NEXT_PUBLIC_EMPRESA_RAZAO_SOCIAL || "MultiNegócios Locais Ltda",
+  cnpj: process.env.EMPRESA_CNPJ || process.env.NEXT_PUBLIC_EMPRESA_CNPJ || "00.000.000/0001-00",
+  endereco: process.env.EMPRESA_ENDERECO || process.env.NEXT_PUBLIC_EMPRESA_ENDERECO || "São Paulo/SP",
 };
 
 export interface ContractData {
