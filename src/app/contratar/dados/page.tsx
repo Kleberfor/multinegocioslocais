@@ -130,10 +130,16 @@ function DadosContent() {
     setIsLoading(true);
 
     try {
+      // Incluir valor personalizado se estiver preenchido
+      const submitData = {
+        ...data,
+        valorCustomizado: valorCustomizado ? Number(valorCustomizado) : undefined,
+      };
+
       const response = await fetch("/api/cliente", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(submitData),
       });
 
       const result = await response.json();

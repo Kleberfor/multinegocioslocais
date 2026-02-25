@@ -100,6 +100,9 @@ export const clienteSchema = z.object({
   // Plano
   planoId: z.string().min(1, "Selecione um plano"),
 
+  // Valor personalizado (quando planoId = "plano-customizado")
+  valorCustomizado: z.number().optional(),
+
   // ID do prospect (se veio da análise)
   prospectId: z.string().optional(),
 });

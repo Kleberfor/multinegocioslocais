@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Criar contrato associado
-    const planoInfo = getPlanoInfo(data.planoId);
+    const planoInfo = getPlanoInfo(data.planoId, data.valorCustomizado);
 
     const contrato = await prisma.contrato.create({
       data: {
@@ -61,7 +61,13 @@ export async function POST(request: NextRequest) {
 }
 
 // Temporário - depois virá do banco
-function getPlanoInfo(planoId: string) {
+function getPlanoInfo(planoId: string, valorCustomizado?: number) {
+  // Se for valor personalizado, usar o valor informado
+  if (planoId === "plano-customizado" && valorCustomizado) {
+    // Parcelas padrão para valor personalizado: 12 meses
+    return { total: valorCustomizado, parcelas: 12 };
+  }
+
   const planos: Record<string, { total: number; parcelas: number }> = {
     "plano-6-meses": { total: 6000, parcelas: 6 },
     "plano-12-meses": { total: 9000, parcelas: 12 },
