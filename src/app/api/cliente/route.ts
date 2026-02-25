@@ -21,6 +21,22 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data;
 
+    // Determinar planoId real (null para valores customizados, senão buscar no banco)
+    let planoIdReal: string | null = null;
+
+    // Para planos predefinidos, buscar no banco pelo nome
+    if (data.planoId !== "plano-customizado") {
+      const plano = await prisma.plano.findFirst({
+        where: {
+          OR: [
+            { id: data.planoId },
+            { nome: data.planoId === "plano-6-meses" ? "Plano 6 Meses" : "Plano 12 Meses" }
+          ]
+        }
+      });
+      planoIdReal = plano?.id || null;
+    }
+
     // Criar cliente
     const cliente = await prisma.cliente.create({
       data: {
@@ -30,7 +46,7 @@ export async function POST(request: NextRequest) {
         cpfCnpj: data.cpfCnpj.replace(/\D/g, ""), // Salvar apenas números
         negocio: data.negocio,
         endereco: JSON.parse(JSON.stringify(data.endereco)),
-        planoId: data.planoId,
+        planoId: planoIdReal,
       },
     });
 
@@ -53,8 +69,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao criar cliente:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return NextResponse.json(
-      { error: "Erro ao processar dados" },
+      { error: "Erro ao processar dados", details: errorMessage },
       { status: 500 }
     );
   }
