@@ -449,15 +449,10 @@ export async function analisarSite(url: string): Promise<SiteAnalysis> {
         });
       }
 
-      // Adicionar recomendações gerais de SEO
-      diagnosticoBasico.push({
-        categoria: 'seo',
-        severidade: 'moderado',
-        titulo: 'Verificar SEO básico',
-        descricao: 'Recomendamos verificar meta tags, títulos e descrições',
-        impacto: 'SEO otimizado melhora posicionamento no Google',
-        comoResolver: 'Adicionar meta description, title tags e headings estruturados',
-      });
+      // Nota: Não adicionamos recomendação genérica de SEO aqui
+      // porque sem a API do PageSpeed não temos como verificar
+      // se o site já possui meta tags, títulos, etc.
+      // Quando a API estiver disponível, a análise será precisa.
 
       return {
         url: urlFinal,
@@ -471,9 +466,9 @@ export async function analisarSite(url: string): Promise<SiteAnalysis> {
           fcp: verificacaoBasica.tempoResposta,
           ttfb: verificacaoBasica.tempoResposta,
         },
-        accessibility: 60, // Valor padrão
-        bestPractices: verificacaoBasica.temHttps ? 70 : 40,
-        seo: 50, // Valor padrão
+        accessibility: 70, // Valor padrão mais otimista sem análise real
+        bestPractices: verificacaoBasica.temHttps ? 80 : 50,
+        seo: 70, // Valor padrão mais otimista - sem análise real, assumimos básico OK
         diagnostico: diagnosticoBasico,
         isHttps: verificacaoBasica.temHttps,
         isMobileFriendly: true, // Assumir que sim

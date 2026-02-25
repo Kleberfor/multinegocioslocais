@@ -66,43 +66,43 @@ export const SEGMENTOS: Record<string, SegmentoConfig> = {
   'clinica-saude': {
     nome: 'Clínica/Saúde',
     ticketMedio: 200,
-    fatorMultiplicador: 1.5,
+    fatorMultiplicador: 1.2,
     clientesPotenciaisMes: 200,
   },
   'clinica-estetica': {
     nome: 'Clínica Estética',
     ticketMedio: 300,
-    fatorMultiplicador: 1.6,
+    fatorMultiplicador: 1.3,
     clientesPotenciaisMes: 150,
   },
   'dentista': {
     nome: 'Dentista/Odontologia',
     ticketMedio: 250,
-    fatorMultiplicador: 1.5,
+    fatorMultiplicador: 1.2,
     clientesPotenciaisMes: 180,
   },
   'advocacia': {
     nome: 'Escritório de Advocacia',
     ticketMedio: 500,
-    fatorMultiplicador: 2.0,
+    fatorMultiplicador: 1.4,
     clientesPotenciaisMes: 100,
   },
   'contabilidade': {
     nome: 'Contabilidade',
     ticketMedio: 400,
-    fatorMultiplicador: 1.8,
+    fatorMultiplicador: 1.3,
     clientesPotenciaisMes: 80,
   },
   'imobiliaria': {
     nome: 'Imobiliária',
     ticketMedio: 5000,
-    fatorMultiplicador: 2.5,
+    fatorMultiplicador: 1.5,
     clientesPotenciaisMes: 50,
   },
   'concessionaria': {
     nome: 'Concessionária/Veículos',
     ticketMedio: 50000,
-    fatorMultiplicador: 3.0,
+    fatorMultiplicador: 1.8,
     clientesPotenciaisMes: 30,
   },
   'varejo': {
@@ -157,12 +157,13 @@ export const SEGMENTOS: Record<string, SegmentoConfig> = {
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTES DE PRECIFICAÇÃO
+// Valores ajustados para realidade de negócios locais
 // ═══════════════════════════════════════════════════════════════
 
-const VALOR_BASE = 6000;           // Valor mínimo de implantação
-const VALOR_MAXIMO = 15000;        // Valor máximo de implantação
-const VALOR_POR_PONTO = 90;        // R$ por ponto de oportunidade
-const PERCENTUAL_MENSAL = 0.15;    // 15% do valor para gestão mensal
+const VALOR_BASE = 1500;           // Valor mínimo de implantação (acessível)
+const VALOR_MAXIMO = 6000;         // Valor máximo de implantação
+const VALOR_POR_PONTO = 40;        // R$ por ponto de oportunidade
+const PERCENTUAL_MENSAL = 0.12;    // 12% do valor para gestão mensal
 
 // ═══════════════════════════════════════════════════════════════
 // FUNÇÕES DE CÁLCULO
@@ -202,14 +203,14 @@ function calcularScoreAvaliacoes(quantidade: number, nota: number): number {
 
 /**
  * Calcula fator de concorrência
- * Mais concorrentes = mais urgência = maior valor justificado
+ * Mais concorrentes = mais urgência, mas com impacto moderado
  */
 function calcularFatorConcorrencia(concorrentes: number): number {
-  if (concorrentes <= 3) return 0.9;
+  if (concorrentes <= 3) return 0.95;
   if (concorrentes <= 5) return 1.0;
-  if (concorrentes <= 10) return 1.1;
-  if (concorrentes <= 20) return 1.2;
-  return 1.3;
+  if (concorrentes <= 10) return 1.05;
+  if (concorrentes <= 20) return 1.1;
+  return 1.15;
 }
 
 /**
