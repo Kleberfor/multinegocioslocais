@@ -97,16 +97,28 @@ function SucessoContent() {
   };
 
   const handleResendEmail = async () => {
+    if (!clienteId) return;
+
     setIsResending(true);
     try {
-      // Por enquanto, apenas simula o reenvio
-      // Futuramente, chamar uma API de envio de email
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch("/api/email/send-contract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clienteId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao enviar email");
+      }
+
       setEmailSent(true);
       setTimeout(() => setEmailSent(false), 5000);
     } catch (error) {
       console.error("Erro ao reenviar email:", error);
-      alert("Erro ao reenviar email. Tente novamente.");
+      const errorMsg = error instanceof Error ? error.message : "Erro desconhecido";
+      alert(`Erro ao reenviar email: ${errorMsg}`);
     } finally {
       setIsResending(false);
     }

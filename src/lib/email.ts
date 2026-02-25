@@ -158,6 +158,111 @@ interface FollowUpEmailData {
 /**
  * Envia email de follow-up para um lead
  */
+interface ContratoEmailData {
+  para: string;
+  nome: string;
+  negocio: string;
+  contratoId: string;
+  valor: number;
+}
+
+/**
+ * Envia email de confirmação de contrato para o cliente
+ */
+export async function enviarEmailContrato(data: ContratoEmailData) {
+  if (!resend) {
+    console.log("[Email] Resend não configurado, pulando confirmação de contrato");
+    return { success: false, error: "Email não configurado" };
+  }
+
+  try {
+    const { data: resultado, error } = await resend.emails.send({
+      from: `MultiNegócios Locais <${FROM_EMAIL}>`,
+      to: [data.para],
+      subject: `Contrato #${data.contratoId} - Confirmação de Contratação`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+
+            <!-- Header -->
+            <div style="background-color: #16a34a; color: white; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Contratação Confirmada!</h1>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 32px;">
+              <p style="font-size: 18px; margin: 0 0 24px 0;">Olá, <strong>${data.nome}</strong>!</p>
+
+              <p style="color: #374151; line-height: 1.6;">
+                Parabéns! Sua contratação foi realizada com sucesso. Estamos muito felizes em tê-lo(a) conosco!
+              </p>
+
+              <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 24px 0;">
+                <h3 style="margin: 0 0 16px 0; color: #166534;">Detalhes do Contrato</h3>
+                <table style="width: 100%;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Contrato Nº:</td>
+                    <td style="padding: 8px 0; font-weight: bold;">${data.contratoId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Negócio:</td>
+                    <td style="padding: 8px 0; font-weight: bold;">${data.negocio}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Valor Total:</td>
+                    <td style="padding: 8px 0; font-weight: bold; color: #16a34a;">R$ ${data.valor.toLocaleString("pt-BR")}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <h3 style="color: #111827;">Próximos Passos:</h3>
+              <ol style="color: #374151; line-height: 1.8;">
+                <li>Em até 24 horas, um especialista entrará em contato para iniciar a otimização do seu Perfil de Empresa no Google.</li>
+                <li>Você receberá acesso ao painel de métricas após a confirmação do pagamento.</li>
+                <li>Qualquer dúvida, entre em contato pelo WhatsApp.</li>
+              </ol>
+
+              <div style="text-align: center; margin-top: 32px;">
+                <a href="https://wa.me/5511916682510" style="display: inline-block; padding: 14px 28px; background-color: #25d366; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
+                  💬 Falar no WhatsApp
+                </a>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding: 24px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
+                MultiNegócios Locais - Transformando negócios locais
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                WhatsApp: (11) 91668-2510 | multinegocioslocais.com.br
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("[Email] Erro ao enviar confirmação de contrato:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log("[Email] Confirmação de contrato enviada:", resultado?.id);
+    return { success: true, id: resultado?.id };
+  } catch (error) {
+    console.error("[Email] Erro ao enviar confirmação de contrato:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
 export async function enviarEmailFollowUp(data: FollowUpEmailData) {
   if (!resend) {
     console.log("[Email] Resend não configurado, pulando follow-up");
