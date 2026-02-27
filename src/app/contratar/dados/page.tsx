@@ -18,46 +18,56 @@ import {
   formatPhone,
   formatCep,
 } from "@/lib/validations";
-import { Loader2, User, Building, MapPin, CreditCard } from "lucide-react";
+import { Loader2, User, Building, MapPin, CreditCard, CheckCircle, Settings } from "lucide-react";
 
-// Planos disponíveis (temporário - depois virá do banco)
-const PLANOS = [
-  {
-    id: "plano-6-meses",
-    nome: "Plano 6 Meses",
-    descricao: "Ideal para começar",
-    implantacao: 3000,
-    mensalidade: 500,
-    parcelas: 6,
-    total: 6000,
-  },
-  {
-    id: "plano-12-meses",
-    nome: "Plano 12 Meses",
-    descricao: "Melhor custo-benefício",
-    implantacao: 3000,
-    mensalidade: 500,
-    parcelas: 12,
-    total: 9000,
-    destaque: true,
-  },
-];
+// Interface para dados da proposta
+interface PropostaData {
+  valorImplantacao: number;
+  valorMensal: number;
+  parcelamento: { parcelas: number; valorParcela: number }[];
+}
+
+interface LeadData {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  negocio: string;
+  proposta: PropostaData | null;
+  valorSugerido: number | null;
+}
 
 function DadosContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prospectId = searchParams.get("prospect");
   const leadId = searchParams.get("lead");
-  const fromAdmin = searchParams.get("from") === "admin";
+  const fromSource = searchParams.get("from");
+  const fromAdmin = fromSource === "admin";
+  const fromProposta = fromSource === "proposta";
 
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPlano, setSelectedPlano] = useState<string>("");
-  const [prospectData, setProspectData] = useState<any>(null);
-  const [leadData, setLeadData] = useState<any>(null);
+  const [isLoadingLead, setIsLoadingLead] = useState(false);
+  const [selectedParcelas, setSelectedParcelas] = useState<number>(1);
+  const [leadData, setLeadData] = useState<LeadData | null>(null);
   const [valorCustomizado, setValorCustomizado] = useState<string>("");
+  const [incluirGestaoMensal, setIncluirGestaoMensal] = useState<boolean>(false);
 
-  // Se vier de admin com lead, não precisa mostrar seleção de plano
+  // Determinar tipo de fluxo
   const isAdminFlow = fromAdmin && leadId;
+  const isPropostaFlow = fromProposta && leadId;
+
+  // Valores da proposta
+  const proposta = leadData?.proposta;
+  const valorImplantacao = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || 0;
+  const valorMensal = proposta?.valorMensal || Math.round(valorImplantacao * 0.12);
+
+  // Calcular opções de parcelamento baseadas na proposta
+  const opcoesPagamento = [
+    { parcelas: 1, valorParcela: valorImplantacao, label: "À Vista", desconto: true },
+    { parcelas: 6, valorParcela: Math.round(valorImplantacao / 6), label: "6x sem juros" },
+    { parcelas: 12, valorParcela: Math.round((valorImplantacao * 1.1) / 12), label: "12x (10% juros)", total: Math.round(valorImplantacao * 1.1) },
+  ];
 
   const {
     register,
@@ -82,9 +92,10 @@ function DadosContent() {
     }
   }, [prospectId, setValue]);
 
-  // Carregar dados do lead se vier do admin
+  // Carregar dados do lead se vier do admin ou da proposta
   useEffect(() => {
-    if (leadId && fromAdmin) {
+    if (leadId && (fromAdmin || fromProposta)) {
+      setIsLoadingLead(true);
       fetch(`/api/leads/${leadId}`)
         .then((res) => res.json())
         .then((data) => {
@@ -95,14 +106,20 @@ function DadosContent() {
             if (data.email) setValue("email", data.email);
             if (data.telefone) setValue("telefone", data.telefone);
             if (data.negocio) setValue("negocio", data.negocio);
-            // Definir plano como customizado (admin)
-            setValue("planoId", "plano-customizado");
-            setSelectedPlano("plano-customizado");
+
+            if (fromAdmin) {
+              // Admin: definir plano como customizado
+              setValue("planoId", "plano-customizado");
+            } else if (fromProposta) {
+              // Proposta: usar valores da proposta
+              setValue("planoId", "plano-proposta");
+            }
           }
         })
-        .catch((err) => console.error("Erro ao carregar lead:", err));
+        .catch((err) => console.error("Erro ao carregar lead:", err))
+        .finally(() => setIsLoadingLead(false));
     }
-  }, [leadId, fromAdmin, setValue]);
+  }, [leadId, fromAdmin, fromProposta, setValue]);
 
   // Buscar CEP
   const handleCepBlur = async (cep: string) => {
@@ -130,10 +147,30 @@ function DadosContent() {
     setIsLoading(true);
 
     try {
-      // Incluir valor personalizado se estiver preenchido
+      // Calcular valores baseados no fluxo
+      let valorTotal = 0;
+      let parcelas = 1;
+      let valorGestaoMensal = 0;
+
+      if (isPropostaFlow && valorImplantacao > 0) {
+        // Fluxo da proposta: usar valores calculados
+        const opcaoSelecionada = opcoesPagamento.find(o => o.parcelas === selectedParcelas);
+        valorTotal = opcaoSelecionada?.total || valorImplantacao;
+        parcelas = selectedParcelas;
+        valorGestaoMensal = incluirGestaoMensal ? valorMensal : 0;
+      } else if (valorCustomizado) {
+        // Admin: valor personalizado
+        valorTotal = Number(valorCustomizado);
+        parcelas = 12;
+      }
+
       const submitData = {
         ...data,
-        valorCustomizado: valorCustomizado ? Number(valorCustomizado) : undefined,
+        leadId: leadId || undefined,
+        valorTotal,
+        parcelas,
+        valorGestaoMensal,
+        fromProposta: isPropostaFlow,
       };
 
       const response = await fetch("/api/cliente", {
@@ -423,100 +460,170 @@ function DadosContent() {
             </CardContent>
           </Card>
 
-          {/* Seleção de Plano */}
+          {/* Seleção de Forma de Pagamento */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center text-lg">
                 <CreditCard className="w-5 h-5 mr-2" />
-                {isAdminFlow ? "Valor do Contrato" : "Escolha seu Plano"}
+                {isPropostaFlow ? "Escolha a Forma de Pagamento" : isAdminFlow ? "Valor do Contrato" : "Escolha seu Plano"}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!isAdminFlow && (
-                <div className="grid gap-4 md:grid-cols-2 mb-4">
-                  {PLANOS.map((plano) => (
-                    <div
-                      key={plano.id}
-                      onClick={() => {
-                        setSelectedPlano(plano.id);
-                        setValue("planoId", plano.id);
-                        setValorCustomizado("");
-                      }}
-                      className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedPlano === plano.id
-                          ? "border-primary bg-primary/5"
-                          : "border-muted hover:border-primary/50"
-                      }`}
-                    >
-                      {plano.destaque && (
-                        <span className="absolute -top-2 left-4 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded">
-                          Mais Popular
-                        </span>
-                      )}
-                      <h3 className="font-semibold">{plano.nome}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {plano.descricao}
-                      </p>
-                      <div className="mt-3">
-                        <p className="text-sm">
-                          Implantação:{" "}
-                          <strong>
-                            R$ {plano.implantacao.toLocaleString("pt-BR")}
-                          </strong>
+              {/* Fluxo da Proposta: Mostrar formas de pagamento baseadas na proposta */}
+              {isPropostaFlow && valorImplantacao > 0 && (
+                <>
+                  {/* Resumo do valor */}
+                  <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                    <p className="text-sm text-muted-foreground mb-1">Valor da Implantação</p>
+                    <p className="text-3xl font-bold text-primary">
+                      R$ {valorImplantacao.toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+
+                  {/* Opções de parcelamento */}
+                  <div className="grid gap-4 md:grid-cols-3 mb-6">
+                    {opcoesPagamento.map((opcao) => (
+                      <div
+                        key={opcao.parcelas}
+                        onClick={() => setSelectedParcelas(opcao.parcelas)}
+                        className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
+                          selectedParcelas === opcao.parcelas
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                      >
+                        {opcao.desconto && (
+                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap">
+                            Melhor opção
+                          </span>
+                        )}
+                        {selectedParcelas === opcao.parcelas && (
+                          <CheckCircle className="absolute top-2 right-2 w-5 h-5 text-primary" />
+                        )}
+                        <p className="font-bold text-2xl mb-1">
+                          {opcao.parcelas}x
                         </p>
-                        <p className="text-sm">
-                          + {plano.parcelas}x de{" "}
-                          <strong>
-                            R$ {plano.mensalidade.toLocaleString("pt-BR")}
-                          </strong>
+                        <p className="text-lg font-semibold text-primary">
+                          R$ {opcao.valorParcela.toLocaleString("pt-BR")}
                         </p>
-                        <p className="text-lg font-bold text-primary mt-2">
-                          Total: R$ {plano.total.toLocaleString("pt-BR")}
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {opcao.label}
+                        </p>
+                        {opcao.total && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Total: R$ {opcao.total.toLocaleString("pt-BR")}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Opção de Gestão Mensal */}
+                  <div className={`p-4 rounded-lg border-2 ${
+                    incluirGestaoMensal ? "border-primary bg-primary/5" : "border-muted"
+                  }`}>
+                    <label className="flex items-start gap-4 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={incluirGestaoMensal}
+                        onChange={(e) => setIncluirGestaoMensal(e.target.checked)}
+                        className="mt-1 w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Settings className="w-5 h-5 text-primary" />
+                          <h3 className="font-semibold">Gestão Mensal</h3>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                            Opcional
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Inclui manutenção do sistema, gestão de redes sociais, relatórios de acompanhamento e suporte técnico.
+                        </p>
+                        <p className="text-xl font-bold text-primary">
+                          R$ {valorMensal.toLocaleString("pt-BR")}/mês
                         </p>
                       </div>
+                    </label>
+                  </div>
+
+                  {/* Resumo do total */}
+                  <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span>Implantação ({selectedParcelas}x)</span>
+                      <span className="font-semibold">
+                        R$ {(opcoesPagamento.find(o => o.parcelas === selectedParcelas)?.total || valorImplantacao).toLocaleString("pt-BR")}
+                      </span>
                     </div>
-                  ))}
+                    {incluirGestaoMensal && (
+                      <div className="flex justify-between items-center mb-2 text-sm">
+                        <span>+ Gestão Mensal (a partir do 2º mês)</span>
+                        <span>R$ {valorMensal.toLocaleString("pt-BR")}/mês</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 mt-2 flex justify-between items-center">
+                      <span className="font-semibold">Primeiro pagamento</span>
+                      <span className="text-xl font-bold text-primary">
+                        R$ {(opcoesPagamento.find(o => o.parcelas === selectedParcelas)?.valorParcela || valorImplantacao).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Fluxo Admin: Valor personalizado */}
+              {isAdminFlow && (
+                <div className="p-4 rounded-lg border-2 border-primary bg-primary/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold">Valor Negociado</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Valor acordado na negociação
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-medium">R$</span>
+                    <Input
+                      type="number"
+                      placeholder="Ex: 5000"
+                      value={valorCustomizado || leadData?.valorSugerido || ""}
+                      onChange={(e) => {
+                        setValorCustomizado(e.target.value);
+                        setValue("planoId", "plano-customizado");
+                      }}
+                      className="text-lg font-medium"
+                    />
+                  </div>
+                  {valorCustomizado && (
+                    <p className="text-lg font-bold text-primary mt-2">
+                      Total: R$ {Number(valorCustomizado).toLocaleString("pt-BR")}
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Opção de valor personalizado */}
-              <div className={`p-4 rounded-lg border-2 ${
-                selectedPlano === "plano-customizado" || isAdminFlow
-                  ? "border-primary bg-primary/5"
-                  : "border-muted"
-              }`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold">
-                      {isAdminFlow ? "Valor Negociado" : "Valor Personalizado"}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {isAdminFlow
-                        ? "Valor acordado na negociação"
-                        : "Digite um valor diferente dos planos acima"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-medium">R$</span>
-                  <Input
-                    type="number"
-                    placeholder="Ex: 5000"
-                    value={valorCustomizado || (isAdminFlow ? leadData?.valorSugerido || "" : "")}
-                    onChange={(e) => {
-                      setValorCustomizado(e.target.value);
-                      setSelectedPlano("plano-customizado");
-                      setValue("planoId", "plano-customizado");
-                    }}
-                    className="text-lg font-medium"
-                  />
-                </div>
-                {valorCustomizado && (
-                  <p className="text-lg font-bold text-primary mt-2">
-                    Total: R$ {Number(valorCustomizado).toLocaleString("pt-BR")}
+              {/* Fluxo sem lead: mostrar aviso */}
+              {!isPropostaFlow && !isAdminFlow && (
+                <div className="p-6 text-center border-2 border-dashed border-muted rounded-lg">
+                  <p className="text-muted-foreground">
+                    Para ver as opções de pagamento, primeiro faça a análise do seu negócio.
                   </p>
-                )}
-              </div>
+                  <Link href="/analisar">
+                    <Button className="mt-4">
+                      Analisar Meu Negócio
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
+              {/* Loading do lead */}
+              {isLoadingLead && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                  <span>Carregando dados da proposta...</span>
+                </div>
+              )}
 
               {errors.planoId && (
                 <p className="text-sm text-destructive mt-2">

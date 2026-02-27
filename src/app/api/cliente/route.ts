@@ -6,8 +6,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validar dados
-    const validationResult = createClienteSchema.safeParse(body);
+    // Extrair campos adicionais antes da validação
+    const {
+      leadId,
+      valorTotal,
+      parcelas: parcelasInput,
+      valorGestaoMensal,
+      fromProposta,
+      ...restBody
+    } = body;
+
+    // Validar dados básicos do cliente
+    const validationResult = createClienteSchema.safeParse(restBody);
 
     if (!validationResult.success) {
       return NextResponse.json(
@@ -21,20 +31,24 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data;
 
-    // Determinar planoId real (null para valores customizados, senão buscar no banco)
-    let planoIdReal: string | null = null;
+    // Determinar valores do contrato
+    let contratoValor: number;
+    let contratoParcelas: number;
+    let contratoValorMensal: number = valorGestaoMensal || 0;
 
-    // Para planos predefinidos, buscar no banco pelo nome
-    if (data.planoId !== "plano-customizado") {
-      const plano = await prisma.plano.findFirst({
-        where: {
-          OR: [
-            { id: data.planoId },
-            { nome: data.planoId === "plano-6-meses" ? "Plano 6 Meses" : "Plano 12 Meses" }
-          ]
-        }
-      });
-      planoIdReal = plano?.id || null;
+    if (fromProposta && valorTotal > 0) {
+      // Fluxo da proposta: usar valores passados
+      contratoValor = valorTotal;
+      contratoParcelas = parcelasInput || 1;
+    } else if (data.planoId === "plano-customizado" && valorTotal > 0) {
+      // Admin: valor customizado
+      contratoValor = valorTotal;
+      contratoParcelas = parcelasInput || 12;
+    } else {
+      // Fallback para planos antigos (não deveria acontecer)
+      const planoInfo = getPlanoInfo(data.planoId);
+      contratoValor = planoInfo.total;
+      contratoParcelas = planoInfo.parcelas;
     }
 
     // Criar cliente
@@ -43,24 +57,37 @@ export async function POST(request: NextRequest) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
-        cpfCnpj: data.cpfCnpj.replace(/\D/g, ""), // Salvar apenas números
+        cpfCnpj: data.cpfCnpj.replace(/\D/g, ""),
         negocio: data.negocio,
         endereco: JSON.parse(JSON.stringify(data.endereco)),
-        planoId: planoIdReal,
+        planoId: null, // Sempre null pois usamos valores dinâmicos
+        leadId: leadId || null,
       },
     });
 
     // Criar contrato associado
-    const planoInfo = getPlanoInfo(data.planoId, data.valorCustomizado);
-
     const contrato = await prisma.contrato.create({
       data: {
         clienteId: cliente.id,
-        valor: planoInfo.total,
-        parcelas: planoInfo.parcelas,
+        valor: contratoValor,
+        parcelas: contratoParcelas,
+        valorMensal: contratoValorMensal,
         status: "PENDENTE",
       },
     });
+
+    // Atualizar lead se existir
+    if (leadId) {
+      await prisma.lead.update({
+        where: { id: leadId },
+        data: {
+          status: "CONVERTIDO",
+          clienteId: cliente.id,
+        },
+      }).catch(() => {
+        // Ignorar se lead não existir ou não puder atualizar
+      });
+    }
 
     return NextResponse.json({
       id: cliente.id,
@@ -77,18 +104,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Temporário - depois virá do banco
-function getPlanoInfo(planoId: string, valorCustomizado?: number) {
-  // Se for valor personalizado, usar o valor informado
-  if (planoId === "plano-customizado" && valorCustomizado) {
-    // Parcelas padrão para valor personalizado: 12 meses
-    return { total: valorCustomizado, parcelas: 12 };
-  }
-
+// Fallback para planos antigos (compatibilidade)
+function getPlanoInfo(planoId: string) {
   const planos: Record<string, { total: number; parcelas: number }> = {
-    "plano-6-meses": { total: 6000, parcelas: 6 },
-    "plano-12-meses": { total: 9000, parcelas: 12 },
+    "plano-6-meses": { total: 3000, parcelas: 6 },
+    "plano-12-meses": { total: 4500, parcelas: 12 },
   };
 
-  return planos[planoId] || { total: 6000, parcelas: 6 };
+  return planos[planoId] || { total: 3000, parcelas: 6 };
 }
