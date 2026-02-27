@@ -99,7 +99,7 @@ export default async function FollowUpPage() {
     FECHAMENTO: { color: "bg-red-100 text-red-700", label: "Fechamento" },
   };
 
-  const canalIcon: Record<string, any> = {
+  const canalIcon: Record<string, React.ElementType> = {
     EMAIL: Mail,
     WHATSAPP: MessageSquare,
     TELEFONE: Phone,

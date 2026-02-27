@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const segmento = searchParams.get("segmento");
 
-    const where: any = {};
+    const where: { status?: string; segmento?: string } = {};
     if (status) where.status = status;
     if (segmento) where.segmento = segmento;
 

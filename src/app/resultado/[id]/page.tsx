@@ -11,6 +11,40 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { AcoesResultado } from "@/components/acoes-resultado";
+import { Decimal } from "@prisma/client/runtime/library";
+
+interface AnalisePublica {
+  temInstagram?: boolean;
+  temFacebook?: boolean;
+  appleMaps?: boolean;
+}
+
+interface AnaliseCompleta {
+  analisePublica?: AnalisePublica;
+}
+
+interface LeadType {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  negocio: string;
+  scoreGeral: number | null;
+  scoreGBP: number | null;
+  scoreSite: number | null;
+  scoreRedes: number | null;
+  proposta: unknown;
+  valorSugerido: Decimal | null;
+  analiseCompleta?: AnaliseCompleta | null;
+}
+
+interface ProspectType {
+  id: string;
+  nome: string;
+  email: string | null;
+  score: number;
+  analise: unknown;
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -43,7 +77,7 @@ export default async function ResultadoPage({ params }: PageProps) {
 }
 
 // Componente para resultado de Lead (novo fluxo - apenas scores)
-function ResultadoLead({ lead }: { lead: any }) {
+function ResultadoLead({ lead }: { lead: LeadType }) {
   const scoreGeral = lead.scoreGeral || 0;
   const scoreGBP = lead.scoreGBP || 0;
   const scoreSite = lead.scoreSite || 0;
@@ -192,33 +226,33 @@ function ResultadoLead({ lead }: { lead: any }) {
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">Redes Sociais</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                    (lead.analiseCompleta as any)?.analisePublica?.temInstagram
+                    lead.analiseCompleta?.analisePublica?.temInstagram
                       ? "bg-green-50 text-green-700"
                       : "bg-gray-50 text-gray-500"
                   }`}>
                     <div className={`w-2 h-2 rounded-full ${
-                      (lead.analiseCompleta as any)?.analisePublica?.temInstagram
+                      lead.analiseCompleta?.analisePublica?.temInstagram
                         ? "bg-green-500"
                         : "bg-gray-400"
                     }`} />
                     <span className="text-sm">Instagram</span>
                     <span className="text-xs ml-auto">
-                      {(lead.analiseCompleta as any)?.analisePublica?.temInstagram ? "OK" : "Ausente"}
+                      {lead.analiseCompleta?.analisePublica?.temInstagram ? "OK" : "Ausente"}
                     </span>
                   </div>
                   <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                    (lead.analiseCompleta as any)?.analisePublica?.temFacebook
+                    lead.analiseCompleta?.analisePublica?.temFacebook
                       ? "bg-green-50 text-green-700"
                       : "bg-gray-50 text-gray-500"
                   }`}>
                     <div className={`w-2 h-2 rounded-full ${
-                      (lead.analiseCompleta as any)?.analisePublica?.temFacebook
+                      lead.analiseCompleta?.analisePublica?.temFacebook
                         ? "bg-green-500"
                         : "bg-gray-400"
                     }`} />
                     <span className="text-sm">Facebook</span>
                     <span className="text-xs ml-auto">
-                      {(lead.analiseCompleta as any)?.analisePublica?.temFacebook ? "OK" : "Ausente"}
+                      {lead.analiseCompleta?.analisePublica?.temFacebook ? "OK" : "Ausente"}
                     </span>
                   </div>
                 </div>
@@ -229,18 +263,18 @@ function ResultadoLead({ lead }: { lead: any }) {
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">Outras Plataformas</h3>
                 <div className="grid grid-cols-1 gap-3">
                   <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                    (lead.analiseCompleta as any)?.analisePublica?.appleMaps
+                    lead.analiseCompleta?.analisePublica?.appleMaps
                       ? "bg-green-50 text-green-700"
                       : "bg-gray-50 text-gray-500"
                   }`}>
                     <div className={`w-2 h-2 rounded-full ${
-                      (lead.analiseCompleta as any)?.analisePublica?.appleMaps
+                      lead.analiseCompleta?.analisePublica?.appleMaps
                         ? "bg-green-500"
                         : "bg-gray-400"
                     }`} />
                     <span className="text-sm">Apple Maps</span>
                     <span className="text-xs ml-auto">
-                      {(lead.analiseCompleta as any)?.analisePublica?.appleMaps ? "OK" : "Ausente"}
+                      {lead.analiseCompleta?.analisePublica?.appleMaps ? "OK" : "Ausente"}
                     </span>
                   </div>
                 </div>
@@ -368,8 +402,8 @@ function ResultadoLead({ lead }: { lead: any }) {
 }
 
 // Componente para resultado de Prospect (fluxo antigo - versão simplificada)
-function ResultadoProspectSimplificado({ prospect }: { prospect: any }) {
-  const analise = prospect.analise as any;
+function ResultadoProspectSimplificado({ prospect }: { prospect: ProspectType }) {
+  const analise = prospect.analise as { score?: { total?: number } } | null;
   const score = analise?.score?.total || prospect.score || 0;
 
   const getScoreColor = (s: number) => {

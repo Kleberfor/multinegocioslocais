@@ -17,6 +17,7 @@ import {
   Download,
 } from "lucide-react";
 import { DeleteLeadButton } from "@/components/admin/delete-lead-button";
+import { Decimal } from "@prisma/client/runtime/library";
 
 type LeadListItem = {
   id: string;
@@ -28,7 +29,7 @@ type LeadListItem = {
   scoreGeral: number | null;
   scoreGBP: number | null;
   scoreSite: number | null;
-  valorSugerido: any;
+  valorSugerido: Decimal | null;
   status: string;
   convertido: boolean;
   pesquisaEm: Date;
@@ -78,7 +79,7 @@ export default async function LeadsPage() {
 
   const [leads, stats] = await Promise.all([getLeads(), getStats()]);
 
-  const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
+  const statusConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
     NOVO: { color: "bg-blue-100 text-blue-700", icon: Clock, label: "Novo" },
     CONTATADO: { color: "bg-yellow-100 text-yellow-700", icon: Phone, label: "Contatado" },
     NEGOCIANDO: { color: "bg-purple-100 text-purple-700", icon: TrendingUp, label: "Negociando" },

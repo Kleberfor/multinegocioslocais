@@ -87,7 +87,12 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const updateData: any = {};
+    const updateData: {
+      status?: string;
+      executadoEm?: Date;
+      resultado?: string;
+      observacoes?: string;
+    } = {};
 
     if (status) {
       updateData.status = status;

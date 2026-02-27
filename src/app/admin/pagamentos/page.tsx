@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { CreditCard, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Decimal } from "@prisma/client/runtime/library";
 
 type PagamentoWithContrato = {
   id: string;
-  valor: any;
+  valor: Decimal;
   parcela: number;
   status: string;
   mpId: string | null;
@@ -45,7 +46,7 @@ export default async function PagamentosPage() {
 
   const pagamentos = await getPagamentos();
 
-  const statusConfig: Record<string, { color: string; icon: any }> = {
+  const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
     PENDENTE: { color: "bg-yellow-100 text-yellow-700", icon: Clock },
     PROCESSANDO: { color: "bg-blue-100 text-blue-700", icon: Clock },
     PAGO: { color: "bg-green-100 text-green-700", icon: CheckCircle },

@@ -2,12 +2,11 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Decimal } from "@prisma/client/runtime/library";
 
 type ContratoWithCliente = {
   id: string;
-  valor: any;
+  valor: Decimal;
   parcelas: number;
   status: string;
   createdAt: Date;

@@ -2,9 +2,8 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Mail, Phone, FileText } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
+import { Decimal } from "@prisma/client/runtime/library";
 
 type ClienteWithContratos = {
   id: string;
@@ -15,7 +14,7 @@ type ClienteWithContratos = {
   negocio: string;
   contratos: {
     id: string;
-    valor: any;
+    valor: Decimal;
     status: string;
   }[];
 };

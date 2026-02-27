@@ -4,13 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Users,
-  Search,
   FileText,
   DollarSign,
   TrendingUp,
   TrendingDown,
-  CheckCircle,
-  Clock,
   Phone,
   Target,
 } from "lucide-react";

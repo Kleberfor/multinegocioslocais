@@ -73,7 +73,6 @@ function DadosContent() {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),

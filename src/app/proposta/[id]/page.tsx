@@ -17,6 +17,25 @@ import {
   BarChart3,
 } from "lucide-react";
 
+interface ParcelamentoOption {
+  parcelas: number;
+  valorParcela: number;
+}
+
+interface RoiEstimado {
+  retornoInvestimentoMeses?: number;
+  clientesAdicionaisMes?: number;
+  faturamentoAdicionalMes?: number;
+}
+
+interface Proposta {
+  valorImplantacao?: number;
+  valorMensal?: number;
+  parcelamento?: ParcelamentoOption[];
+  roiEstimado?: RoiEstimado;
+  prioridadeServicos?: string[];
+}
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -32,7 +51,7 @@ export default async function PropostaPage({ params }: PageProps) {
     notFound();
   }
 
-  const proposta = lead.proposta as any;
+  const proposta = lead.proposta as Proposta;
   const scoreGeral = lead.scoreGeral || 0;
 
   return (

@@ -11,11 +11,7 @@ import {
   Globe,
   MapPin,
   Calendar,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
   CheckCircle,
-  Clock,
   DollarSign,
   Target,
   FileText,
@@ -23,6 +19,47 @@ import {
 import { LeadActions } from "@/components/admin/lead-actions";
 import { EditProposta } from "@/components/admin/edit-proposta";
 import { EditObservacoes } from "@/components/admin/edit-observacoes";
+import { Decimal } from "@prisma/client/runtime/library";
+
+// Tipos para dados estruturados do Lead
+interface DiagnosticoItem {
+  titulo: string;
+  situacaoAtual: string;
+  ideal?: string;
+  comoResolver: string;
+}
+
+interface Diagnostico {
+  itens?: DiagnosticoItem[];
+}
+
+interface AnaliseCompleta {
+  diagnosticoGBP?: Diagnostico;
+  diagnosticoSite?: Diagnostico;
+}
+
+interface ParcelamentoOption {
+  parcelas: number;
+  valorParcela: number;
+}
+
+interface RoiEstimado {
+  retornoInvestimentoMeses?: number;
+  clientesAdicionaisMes?: number;
+}
+
+interface Proposta {
+  valorMensal?: number;
+  roiEstimado?: RoiEstimado;
+  parcelamento?: ParcelamentoOption[];
+}
+
+interface FasePlanoAcao {
+  fase: string;
+  periodo: string;
+  acoes?: string[];
+  entregaveis?: string[];
+}
 
 type Lead = {
   id: string;
@@ -39,11 +76,11 @@ type Lead = {
   scoreGBP: number | null;
   scoreSite: number | null;
   scoreRedes: number | null;
-  analiseCompleta: any;
-  argumentosFechamento: any;
-  planoAcao: any;
-  proposta: any;
-  valorSugerido: any;
+  analiseCompleta: AnaliseCompleta | null;
+  argumentosFechamento: string[] | null;
+  planoAcao: FasePlanoAcao[] | null;
+  proposta: Proposta | null;
+  valorSugerido: Decimal | null;
   status: string;
   motivoPerda: string | null;
   observacoes: string | null;
@@ -80,10 +117,10 @@ export default async function LeadDetailPage({
   }
 
   const score = lead.scoreGeral || 0;
-  const analise = lead.analiseCompleta as any;
-  const argumentos = (lead.argumentosFechamento as string[]) || [];
-  const planoAcao = (lead.planoAcao as any[]) || [];
-  const proposta = lead.proposta as any;
+  const analise = lead.analiseCompleta;
+  const argumentos = lead.argumentosFechamento || [];
+  const planoAcao = lead.planoAcao || [];
+  const proposta = lead.proposta;
 
   const getScoreColor = (s: number) => {
     if (s >= 70) return "text-green-600 bg-green-100";
@@ -279,7 +316,7 @@ export default async function LeadDetailPage({
                 <div className="mt-4 pt-4 border-t">
                   <p className="text-xs text-muted-foreground mb-2">Parcelamento:</p>
                   <div className="flex flex-wrap gap-2">
-                    {proposta.parcelamento?.map((p: any) => (
+                    {proposta.parcelamento?.map((p) => (
                       <span key={p.parcelas} className="text-xs bg-muted px-2 py-1 rounded">
                         {p.parcelas}x R$ {p.valorParcela.toLocaleString("pt-BR")}
                       </span>
@@ -325,7 +362,7 @@ export default async function LeadDetailPage({
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {analise.diagnosticoGBP.itens?.map((item: any, i: number) => (
+                  {analise.diagnosticoGBP.itens?.map((item, i) => (
                     <li key={i} className="border-l-2 border-l-red-500 pl-3">
                       <p className="font-medium text-sm">{item.titulo}</p>
                       <p className="text-xs text-muted-foreground">
@@ -348,7 +385,7 @@ export default async function LeadDetailPage({
               <CardContent>
                 {analise.diagnosticoSite.itens?.length > 0 ? (
                   <ul className="space-y-3">
-                    {analise.diagnosticoSite.itens?.map((item: any, i: number) => (
+                    {analise.diagnosticoSite.itens?.map((item, i) => (
                       <li key={i} className="border-l-2 border-l-yellow-500 pl-3">
                         <p className="font-medium text-sm">{item.titulo}</p>
                         <p className="text-xs text-muted-foreground">{item.situacaoAtual}</p>
@@ -378,7 +415,7 @@ export default async function LeadDetailPage({
             <CardContent>
               {planoAcao.length > 0 ? (
                 <div className="space-y-6">
-                  {planoAcao.map((fase: any, i: number) => (
+                  {planoAcao.map((fase, i) => (
                     <div key={i} className="border-l-2 border-l-primary pl-4">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
@@ -390,7 +427,7 @@ export default async function LeadDetailPage({
                         </div>
                       </div>
                       <ul className="space-y-1 ml-8">
-                        {fase.acoes?.map((acao: string, j: number) => (
+                        {fase.acoes?.map((acao, j) => (
                           <li key={j} className="text-xs text-muted-foreground flex items-start gap-1">
                             <span>•</span>
                             <span>{acao}</span>
@@ -401,7 +438,7 @@ export default async function LeadDetailPage({
                         <div className="ml-8 mt-2">
                           <p className="text-xs font-medium text-green-600">Entregáveis:</p>
                           <ul className="space-y-1">
-                            {fase.entregaveis.map((e: string, k: number) => (
+                            {fase.entregaveis.map((e, k) => (
                               <li key={k} className="text-xs text-green-600 flex items-start gap-1">
                                 <CheckCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
                                 <span>{e}</span>

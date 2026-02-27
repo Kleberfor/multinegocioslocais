@@ -195,8 +195,8 @@ function calcularScoreGeral(input: AnaliseInput): number {
  */
 function calcularScoreAvaliacoes(quantidade: number, nota: number): number {
   // Ideal: 50+ avaliações com nota 4.5+
-  let scoreQuantidade = Math.min(quantidade / 50 * 100, 100);
-  let scoreNota = (nota / 5) * 100;
+  const scoreQuantidade = Math.min(quantidade / 50 * 100, 100);
+  const scoreNota = (nota / 5) * 100;
 
   return Math.round((scoreQuantidade * 0.4) + (scoreNota * 0.6));
 }

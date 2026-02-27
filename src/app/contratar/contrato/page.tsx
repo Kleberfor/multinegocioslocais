@@ -7,7 +7,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, FileText, CheckCircle, Download } from "lucide-react";
+import { Loader2, FileText, CheckCircle } from "lucide-react";
+
+interface Endereco {
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+}
 
 interface ClienteData {
   id: string;
@@ -16,7 +26,7 @@ interface ClienteData {
   telefone: string;
   cpfCnpj: string;
   negocio: string;
-  endereco: any;
+  endereco: Endereco;
   planoId: string;
   contratos: {
     id: string;
@@ -37,12 +47,6 @@ function ContratoContent() {
   const [accepted, setAccepted] = useState(false);
   const [contractHtml, setContractHtml] = useState("");
 
-  useEffect(() => {
-    if (clienteId) {
-      loadCliente();
-    }
-  }, [clienteId]);
-
   const loadCliente = async () => {
     try {
       const response = await fetch(`/api/cliente/${clienteId}`);
@@ -58,6 +62,13 @@ function ContratoContent() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (clienteId) {
+      loadCliente();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteId]);
 
   const loadContract = async (clienteData: ClienteData) => {
     try {

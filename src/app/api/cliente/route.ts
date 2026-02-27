@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Determinar valores do contrato
     let contratoValor: number;
     let contratoParcelas: number;
-    let contratoValorMensal: number = valorGestaoMensal || 0;
+    const contratoValorMensal: number = valorGestaoMensal || 0;
 
     if (fromProposta && valorTotal > 0) {
       // Fluxo da proposta: usar valores passados

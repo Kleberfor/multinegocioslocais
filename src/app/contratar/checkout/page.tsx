@@ -17,7 +17,6 @@ import {
   Shield,
   Lock,
   Copy,
-  ExternalLink,
 } from "lucide-react";
 
 interface ClienteData {
@@ -65,10 +64,26 @@ function CheckoutContent() {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
 
+  const loadCliente = async () => {
+    try {
+      const response = await fetch(`/api/cliente/${clienteId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setCliente(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar cliente:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (clienteId) {
       loadCliente();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId]);
 
   // Polling para verificar status do pagamento PIX
@@ -91,21 +106,6 @@ function CheckoutContent() {
       return () => clearInterval(interval);
     }
   }, [pixData, clienteId, router]);
-
-  const loadCliente = async () => {
-    try {
-      const response = await fetch(`/api/cliente/${clienteId}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setCliente(data);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar cliente:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handlePixPayment = async () => {
     setIsProcessing(true);
