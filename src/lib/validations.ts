@@ -98,7 +98,7 @@ export const clienteSchema = z.object({
   }),
 
   // Plano
-  planoId: z.string().min(1, "Selecione um plano"),
+  planoId: z.string().min(1, "Selecione uma forma de pagamento"),
 
   // Valor personalizado (quando planoId = "plano-customizado")
   valorCustomizado: z.number().optional(),

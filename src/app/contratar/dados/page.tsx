@@ -57,10 +57,11 @@ function DadosContent() {
   const isAdminFlow = fromAdmin && leadId;
   const isPropostaFlow = fromProposta && leadId;
 
-  // Valores da proposta
+  // Valores da proposta - valores padrão acessíveis para negócios locais
+  const VALOR_PADRAO = 997; // Valor padrão acessível
   const proposta = leadData?.proposta;
-  const valorImplantacao = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || 0;
-  const valorMensal = proposta?.valorMensal || Math.round(valorImplantacao * 0.12);
+  const valorImplantacao = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || VALOR_PADRAO;
+  const valorMensal = proposta?.valorMensal || 197; // Valor mensal fixo acessível
 
   // Calcular opções de parcelamento baseadas na proposta
   const opcoesPagamento = [
@@ -80,8 +81,18 @@ function DadosContent() {
       endereco: {
         estado: "",
       },
+      planoId: "plano-proposta", // Valor padrão
     },
   });
+
+  // Atualizar planoId baseado no fluxo
+  useEffect(() => {
+    if (fromProposta) {
+      setValue("planoId", "plano-proposta");
+    } else if (fromAdmin) {
+      setValue("planoId", "plano-customizado");
+    }
+  }, [fromProposta, fromAdmin, setValue]);
 
   // Carregar dados do prospect se existir
   useEffect(() => {
@@ -468,8 +479,8 @@ function DadosContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Fluxo da Proposta: Mostrar formas de pagamento baseadas na proposta */}
-              {isPropostaFlow && valorImplantacao > 0 && (
+              {/* Fluxo da Proposta: Mostrar formas de pagamento */}
+              {isPropostaFlow && (
                 <>
                   {/* Resumo do valor */}
                   <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/20">

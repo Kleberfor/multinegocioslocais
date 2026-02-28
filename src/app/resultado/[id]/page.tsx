@@ -11,7 +11,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { AcoesResultado } from "@/components/acoes-resultado";
-import { CompetitorHint } from "@/components/analysis/CompetitorHint";
 import type { Prisma } from "@prisma/client";
 
 interface AnalisePublica {
@@ -287,41 +286,37 @@ function ResultadoLead({ lead }: { lead: LeadType }) {
           </CardContent>
         </Card>
 
-        {/* Comparação com Concorrentes */}
-        <div className="mb-6">
-          <CompetitorHint
-            userScore={scoreGeral}
-            segmento={lead.segmento}
-          />
-        </div>
-
-        {/* Alerta de Perda */}
-        {scoreGeral < 70 && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                  <TrendingDown className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-red-800 mb-1">
-                    Você está perdendo clientes
-                  </h3>
-                  <p className="text-red-700 text-sm mb-2">
-                    Com base na sua análise, estimamos que você está deixando de
-                    faturar aproximadamente:
-                  </p>
-                  <p className="text-3xl font-bold text-red-600">
-                    R$ {perdaEstimada.toLocaleString("pt-BR")}/mês
-                  </p>
-                  <p className="text-xs text-red-600 mt-1">
-                    *Estimativa baseada no seu segmento e score atual
-                  </p>
-                </div>
+        {/* Alerta de Prejuízo - Sempre visível */}
+        <Card className="mb-6 border-red-300 bg-gradient-to-r from-red-50 to-red-100">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-full bg-red-200 flex items-center justify-center flex-shrink-0">
+                <TrendingDown className="w-8 h-8 text-red-600" />
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div className="flex-1">
+                <h3 className="font-bold text-red-800 text-lg mb-2">
+                  Atenção: Você está perdendo dinheiro!
+                </h3>
+                <p className="text-red-700 mb-3">
+                  A cada dia que seu negócio não está 100% visível na internet,
+                  você deixa de atrair novos clientes. Estimamos que seu prejuízo mensal é de:
+                </p>
+                <div className="bg-white/80 rounded-lg p-4 border border-red-200">
+                  <p className="text-sm text-red-600 mb-1">Prejuízo estimado por mês:</p>
+                  <p className="text-4xl font-bold text-red-600">
+                    R$ {perdaEstimada.toLocaleString("pt-BR")}
+                  </p>
+                  <p className="text-sm text-red-500 mt-1">
+                    = R$ {Math.round(perdaEstimada * 12).toLocaleString("pt-BR")}/ano perdidos
+                  </p>
+                </div>
+                <p className="text-xs text-red-600 mt-3 italic">
+                  *Estimativa baseada na média do seu segmento e no seu score de {scoreGeral}/100
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Problemas Identificados (sem detalhes) */}
         <Card className="mb-6">

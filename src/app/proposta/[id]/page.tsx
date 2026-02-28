@@ -223,15 +223,15 @@ export default async function PropostaPage({ params }: PageProps) {
             <div className="mb-6">
               <p className="text-sm text-muted-foreground mb-2">Valor Total</p>
               <p className="text-5xl font-bold text-primary">
-                R$ {(proposta.valorImplantacao || Number(lead.valorSugerido) || 6000).toLocaleString("pt-BR")}
+                R$ {(proposta.valorImplantacao || Number(lead.valorSugerido) || 997).toLocaleString("pt-BR")}
               </p>
             </div>
 
             {/* Parcelamento */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <ParcelamentoOption parcelas={1} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 6000} destaque />
-              <ParcelamentoOption parcelas={6} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 6000} />
-              <ParcelamentoOption parcelas={12} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 6000} />
+              <ParcelamentoOption parcelas={1} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 997} destaque />
+              <ParcelamentoOption parcelas={6} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 997} />
+              <ParcelamentoOption parcelas={12} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 997} />
             </div>
 
             {(proposta.valorMensal ?? 0) > 0 && (
