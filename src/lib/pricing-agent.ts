@@ -160,10 +160,10 @@ export const SEGMENTOS: Record<string, SegmentoConfig> = {
 // Valores ajustados para realidade de negócios locais
 // ═══════════════════════════════════════════════════════════════
 
-const VALOR_BASE = 1500;           // Valor mínimo de implantação (acessível)
-const VALOR_MAXIMO = 6000;         // Valor máximo de implantação
-const VALOR_POR_PONTO = 40;        // R$ por ponto de oportunidade
-const PERCENTUAL_MENSAL = 0.12;    // 12% do valor para gestão mensal
+const VALOR_BASE = 1500;           // Valor mínimo de implantação (a partir de R$ 1.500)
+const VALOR_MAXIMO = 3000;         // Valor máximo de implantação (limite acessível)
+const VALOR_POR_PONTO = 15;        // R$ por ponto de oportunidade (mais gradual)
+const VALOR_MENSAL_MINIMO = 300;   // Valor mensal mínimo (a partir de R$ 300)
 
 // ═══════════════════════════════════════════════════════════════
 // FUNÇÕES DE CÁLCULO
@@ -437,8 +437,8 @@ export function gerarProposta(input: AnaliseInput): PropostaPrecificacao {
     Math.min(Math.max(valorCalculado, VALOR_BASE), VALOR_MAXIMO)
   );
 
-  // Calcular valor mensal
-  const valorMensal = Math.round(valorImplantacao * PERCENTUAL_MENSAL);
+  // Calcular valor mensal (mínimo R$ 300)
+  const valorMensal = Math.max(VALOR_MENSAL_MINIMO, Math.round(valorImplantacao * 0.15));
 
   // Gerar proposta completa
   return {

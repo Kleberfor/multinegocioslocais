@@ -410,8 +410,9 @@ export async function realizarAnaliseCombinada(
     (((placeDetails.userRatingsTotal || 0) > 50 ? 100 : ((placeDetails.userRatingsTotal || 0) * 2)) * 0.1)
   );
 
-  // 6. Calcular perda potencial
-  const perdaPotencial = Math.round((100 - scoreGeral) * 120); // R$120 por ponto perdido
+  // 6. Calcular perda potencial (baseado em faturamento adicional possível)
+  // Fórmula: estimativa conservadora de clientes perdidos * ticket médio do segmento
+  const perdaPotencial = Math.round((100 - scoreGeral) * 50); // R$50 por ponto (mais realista)
 
   // 7. Gerar diagnósticos
   const diagnosticoGBP = gerarDiagnosticoGBP(placeDetails, scoreGBP);

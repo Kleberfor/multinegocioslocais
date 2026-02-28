@@ -55,6 +55,19 @@ export default async function PropostaPage({ params }: PageProps) {
   const proposta = lead.proposta as Proposta;
   const scoreGeral = lead.scoreGeral || 0;
 
+  // Valores com limites realistas para negócios locais
+  const VALOR_MINIMO = 1500;
+  const VALOR_MAXIMO = 3000;
+  const VALOR_MENSAL_MINIMO = 300;
+
+  // Calcular valor de implantação limitado
+  const valorSugeridoRaw = proposta?.valorImplantacao || Number(lead.valorSugerido) || VALOR_MINIMO;
+  const valorImplantacaoFinal = Math.min(Math.max(valorSugeridoRaw, VALOR_MINIMO), VALOR_MAXIMO);
+  const valorMensalFinal = Math.max(proposta?.valorMensal || VALOR_MENSAL_MINIMO, VALOR_MENSAL_MINIMO);
+
+  // Calcular perda estimada (para ROI fazer sentido)
+  const perdaEstimada = Math.round((100 - scoreGeral) * 50); // R$ 50 por ponto
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
       <div className="container py-8 max-w-4xl">
@@ -123,7 +136,7 @@ export default async function PropostaPage({ params }: PageProps) {
                   <Users className="w-6 h-6 text-green-700" />
                 </div>
                 <p className="text-3xl font-bold text-green-700">
-                  +{proposta.roiEstimado?.clientesAdicionaisMes || 15}
+                  +{proposta.roiEstimado?.clientesAdicionaisMes || 10}
                 </p>
                 <p className="text-sm text-green-600">clientes/mês</p>
               </div>
@@ -132,7 +145,7 @@ export default async function PropostaPage({ params }: PageProps) {
                   <DollarSign className="w-6 h-6 text-green-700" />
                 </div>
                 <p className="text-3xl font-bold text-green-700">
-                  R$ {(proposta.roiEstimado?.faturamentoAdicionalMes || 8000).toLocaleString("pt-BR")}
+                  R$ {perdaEstimada.toLocaleString("pt-BR")}
                 </p>
                 <p className="text-sm text-green-600">faturamento adicional/mês</p>
               </div>
@@ -141,7 +154,7 @@ export default async function PropostaPage({ params }: PageProps) {
                   <Clock className="w-6 h-6 text-green-700" />
                 </div>
                 <p className="text-3xl font-bold text-green-700">
-                  {proposta.roiEstimado?.retornoInvestimentoMeses || 3}
+                  {Math.ceil(valorImplantacaoFinal / perdaEstimada) || 2}
                 </p>
                 <p className="text-sm text-green-600">meses para retorno</p>
               </div>
@@ -223,27 +236,25 @@ export default async function PropostaPage({ params }: PageProps) {
             <div className="mb-6">
               <p className="text-sm text-muted-foreground mb-2">Valor Total</p>
               <p className="text-5xl font-bold text-primary">
-                R$ {(proposta.valorImplantacao || Number(lead.valorSugerido) || 997).toLocaleString("pt-BR")}
+                R$ {valorImplantacaoFinal.toLocaleString("pt-BR")}
               </p>
             </div>
 
             {/* Parcelamento */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <ParcelamentoOption parcelas={1} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 997} destaque />
-              <ParcelamentoOption parcelas={6} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 997} />
-              <ParcelamentoOption parcelas={12} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 997} />
+              <ParcelamentoOption parcelas={1} valor={valorImplantacaoFinal} destaque />
+              <ParcelamentoOption parcelas={6} valor={valorImplantacaoFinal} />
+              <ParcelamentoOption parcelas={12} valor={valorImplantacaoFinal} />
             </div>
 
-            {(proposta.valorMensal ?? 0) > 0 && (
-              <div className="mb-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  + Gestão Mensal (opcional)
-                </p>
-                <p className="text-xl font-semibold">
-                  R$ {proposta.valorMensal!.toLocaleString("pt-BR")}/mês
-                </p>
-              </div>
-            )}
+            <div className="mb-6 p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                + Gestão Mensal (opcional)
+              </p>
+              <p className="text-xl font-semibold">
+                R$ {valorMensalFinal.toLocaleString("pt-BR")}/mês
+              </p>
+            </div>
 
             <Link href={`/contratar/dados?lead=${lead.id}&from=proposta`}>
               <Button size="lg" className="w-full md:w-auto px-12 text-lg h-14">

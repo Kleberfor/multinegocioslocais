@@ -58,10 +58,13 @@ function DadosContent() {
   const isPropostaFlow = fromProposta && leadId;
 
   // Valores da proposta - valores padrão acessíveis para negócios locais
-  const VALOR_PADRAO = 997; // Valor padrão acessível
+  const VALOR_PADRAO = 1500; // Valor mínimo de implantação
+  const VALOR_MENSAL_PADRAO = 300; // Valor mínimo mensal
   const proposta = leadData?.proposta;
-  const valorImplantacao = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || VALOR_PADRAO;
-  const valorMensal = proposta?.valorMensal || 197; // Valor mensal fixo acessível
+  // Limitar valorSugerido a no máximo R$ 3.000
+  const valorSugeridoLimitado = Math.min(Number(leadData?.valorSugerido) || VALOR_PADRAO, 3000);
+  const valorImplantacao = proposta?.valorImplantacao || valorSugeridoLimitado || VALOR_PADRAO;
+  const valorMensal = proposta?.valorMensal || VALOR_MENSAL_PADRAO;
 
   // Calcular opções de parcelamento baseadas na proposta
   const opcoesPagamento = [

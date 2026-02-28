@@ -86,8 +86,8 @@ function ResultadoLead({ lead }: { lead: LeadType }) {
   const scoreSite = lead.scoreSite || 0;
   const scoreRedes = lead.scoreRedes || 0;
 
-  // Calcular perda estimada
-  const perdaEstimada = Math.round((100 - scoreGeral) * 120);
+  // Calcular perda estimada (R$ 50 por ponto - alinhado com pricing-agent)
+  const perdaEstimada = Math.round((100 - scoreGeral) * 50);
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-green-600 border-green-500 bg-green-50";
