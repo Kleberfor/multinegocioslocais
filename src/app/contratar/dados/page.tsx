@@ -59,12 +59,15 @@ function DadosContent() {
 
   // Valores da proposta - valores padrão acessíveis para negócios locais
   const VALOR_PADRAO = 1500; // Valor mínimo de implantação
+  const VALOR_MAXIMO = 3000; // Valor máximo de implantação
   const VALOR_MENSAL_PADRAO = 300; // Valor mínimo mensal
   const proposta = leadData?.proposta;
-  // Limitar valorSugerido a no máximo R$ 3.000
-  const valorSugeridoLimitado = Math.min(Number(leadData?.valorSugerido) || VALOR_PADRAO, 3000);
-  const valorImplantacao = proposta?.valorImplantacao || valorSugeridoLimitado || VALOR_PADRAO;
-  const valorMensal = proposta?.valorMensal || VALOR_MENSAL_PADRAO;
+
+  // Calcular valor base a partir de proposta ou valorSugerido
+  const valorBruto = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || VALOR_PADRAO;
+  // SEMPRE limitar entre VALOR_PADRAO (1500) e VALOR_MAXIMO (3000)
+  const valorImplantacao = Math.min(Math.max(valorBruto, VALOR_PADRAO), VALOR_MAXIMO);
+  const valorMensal = Math.max(proposta?.valorMensal || VALOR_MENSAL_PADRAO, VALOR_MENSAL_PADRAO);
 
   // Calcular opções de parcelamento baseadas na proposta
   const opcoesPagamento = [
