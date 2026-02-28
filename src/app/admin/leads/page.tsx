@@ -17,7 +17,7 @@ import {
   Download,
 } from "lucide-react";
 import { DeleteLeadButton } from "@/components/admin/delete-lead-button";
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Prisma } from "@prisma/client";
 
 type LeadListItem = {
   id: string;
@@ -29,7 +29,7 @@ type LeadListItem = {
   scoreGeral: number | null;
   scoreGBP: number | null;
   scoreSite: number | null;
-  valorSugerido: Decimal | null;
+  valorSugerido: Prisma.Decimal | null;
   status: string;
   convertido: boolean;
   pesquisaEm: Date;

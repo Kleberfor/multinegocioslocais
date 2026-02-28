@@ -3,11 +3,11 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { CreditCard, CheckCircle, Clock, XCircle } from "lucide-react";
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Prisma } from "@prisma/client";
 
 type PagamentoWithContrato = {
   id: string;
-  valor: Decimal;
+  valor: Prisma.Decimal;
   parcela: number;
   status: string;
   mpId: string | null;

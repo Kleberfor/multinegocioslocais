@@ -19,7 +19,7 @@ import {
 import { LeadActions } from "@/components/admin/lead-actions";
 import { EditProposta } from "@/components/admin/edit-proposta";
 import { EditObservacoes } from "@/components/admin/edit-observacoes";
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Prisma } from "@prisma/client";
 
 // Tipos para dados estruturados do Lead
 interface DiagnosticoItem {
@@ -80,7 +80,7 @@ type Lead = {
   argumentosFechamento: string[] | null;
   planoAcao: FasePlanoAcao[] | null;
   proposta: Proposta | null;
-  valorSugerido: Decimal | null;
+  valorSugerido: Prisma.Decimal | null;
   status: string;
   motivoPerda: string | null;
   observacoes: string | null;
@@ -383,7 +383,7 @@ export default async function LeadDetailPage({
                 <CardTitle className="text-lg">Diagnóstico do Site</CardTitle>
               </CardHeader>
               <CardContent>
-                {analise.diagnosticoSite.itens?.length > 0 ? (
+                {(analise.diagnosticoSite.itens?.length ?? 0) > 0 ? (
                   <ul className="space-y-3">
                     {analise.diagnosticoSite.itens?.map((item, i) => (
                       <li key={i} className="border-l-2 border-l-yellow-500 pl-3">

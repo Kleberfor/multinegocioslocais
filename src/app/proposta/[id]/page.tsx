@@ -34,6 +34,7 @@ interface Proposta {
   parcelamento?: ParcelamentoOption[];
   roiEstimado?: RoiEstimado;
   prioridadeServicos?: string[];
+  oportunidade?: number;
 }
 
 interface PageProps {
@@ -233,13 +234,13 @@ export default async function PropostaPage({ params }: PageProps) {
               <ParcelamentoOption parcelas={12} valor={proposta.valorImplantacao || Number(lead.valorSugerido) || 6000} />
             </div>
 
-            {proposta.valorMensal > 0 && (
+            {(proposta.valorMensal ?? 0) > 0 && (
               <div className="mb-6 p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   + Gestão Mensal (opcional)
                 </p>
                 <p className="text-xl font-semibold">
-                  R$ {proposta.valorMensal.toLocaleString("pt-BR")}/mês
+                  R$ {proposta.valorMensal!.toLocaleString("pt-BR")}/mês
                 </p>
               </div>
             )}

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Mail, Phone } from "lucide-react";
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Prisma } from "@prisma/client";
 
 type ClienteWithContratos = {
   id: string;
@@ -14,7 +14,7 @@ type ClienteWithContratos = {
   negocio: string;
   contratos: {
     id: string;
-    valor: Decimal;
+    valor: Prisma.Decimal;
     status: string;
   }[];
 };

@@ -11,7 +11,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { AcoesResultado } from "@/components/acoes-resultado";
-import { Decimal } from "@prisma/client/runtime/library";
+import { CompetitorHint } from "@/components/analysis/CompetitorHint";
+import type { Prisma } from "@prisma/client";
 
 interface AnalisePublica {
   temInstagram?: boolean;
@@ -29,12 +30,15 @@ interface LeadType {
   email: string;
   telefone: string;
   negocio: string;
+  segmento: string;
+  enderecoGoogle?: string | null;
+  siteUrl?: string | null;
   scoreGeral: number | null;
   scoreGBP: number | null;
   scoreSite: number | null;
   scoreRedes: number | null;
   proposta: unknown;
-  valorSugerido: Decimal | null;
+  valorSugerido: Prisma.Decimal | null;
   analiseCompleta?: AnaliseCompleta | null;
 }
 
@@ -60,7 +64,7 @@ export default async function ResultadoPage({ params }: PageProps) {
 
   if (lead) {
     // Renderizar resultado simplificado para Lead
-    return <ResultadoLead lead={lead} />;
+    return <ResultadoLead lead={lead as unknown as LeadType} />;
   }
 
   // Se não for Lead, tentar como Prospect (fluxo antigo - manter compatibilidade)
@@ -283,6 +287,14 @@ function ResultadoLead({ lead }: { lead: LeadType }) {
           </CardContent>
         </Card>
 
+        {/* Comparação com Concorrentes */}
+        <div className="mb-6">
+          <CompetitorHint
+            userScore={scoreGeral}
+            segmento={lead.segmento}
+          />
+        </div>
+
         {/* Alerta de Perda */}
         {scoreGeral < 70 && (
           <Card className="mb-6 border-red-200 bg-red-50">
@@ -403,7 +415,7 @@ function ResultadoLead({ lead }: { lead: LeadType }) {
 
 // Componente para resultado de Prospect (fluxo antigo - versão simplificada)
 function ResultadoProspectSimplificado({ prospect }: { prospect: ProspectType }) {
-  const analise = prospect.analise as { score?: { total?: number } } | null;
+  const analise = prospect.analise as { score?: { total?: number }; place?: { address?: string } } | null;
   const score = analise?.score?.total || prospect.score || 0;
 
   const getScoreColor = (s: number) => {

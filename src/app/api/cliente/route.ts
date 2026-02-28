@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
       leadId,
       valorTotal,
       parcelas: parcelasInput,
-      valorGestaoMensal,
       fromProposta,
       ...restBody
     } = body;
@@ -34,7 +33,6 @@ export async function POST(request: NextRequest) {
     // Determinar valores do contrato
     let contratoValor: number;
     let contratoParcelas: number;
-    const contratoValorMensal: number = valorGestaoMensal || 0;
 
     if (fromProposta && valorTotal > 0) {
       // Fluxo da proposta: usar valores passados
@@ -61,7 +59,6 @@ export async function POST(request: NextRequest) {
         negocio: data.negocio,
         endereco: JSON.parse(JSON.stringify(data.endereco)),
         planoId: null, // Sempre null pois usamos valores dinâmicos
-        leadId: leadId || null,
       },
     });
 
@@ -71,7 +68,6 @@ export async function POST(request: NextRequest) {
         clienteId: cliente.id,
         valor: contratoValor,
         parcelas: contratoParcelas,
-        valorMensal: contratoValorMensal,
         status: "PENDENTE",
       },
     });
