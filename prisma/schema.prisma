@@ -1,5 +1,5 @@
 // Prisma Schema — MultiNegócios Locais
-// Blueprint: BP-2026-02-22-001
+// Blueprint: BP-2026-02-28-001 (CRM Prospects & Dashboard Vendedores)
 
 generator client {
   provider = "prisma-client-js"
@@ -15,17 +15,37 @@ datasource db {
 
 model Prospect {
   id        String   @id @default(cuid())
-  placeId   String
+  placeId   String?
   nome      String
   email     String?
   telefone  String?
-  score     Int
-  analise   Json
+  negocio   String?
+  segmento  String?
+  cidade    String?
+  estado    String?
+  score     Int?
+  analise   Json?
+
+  // 🆕 Campos CRM (BP-2026-02-28-001)
+  vendedorId     String?
+  vendedor       User?     @relation("VendedorProspects", fields: [vendedorId], references: [id])
+  statusPipeline String    @default("NOVO") // NOVO, EM_CONTATO, REUNIAO_AGENDADA, PROPOSTA_ENVIADA, NEGOCIANDO, CONTRATO_ENVIADO, ASSINADO, PAGO, PERDIDO, INATIVO
+  origem         String    @default("CAPTACAO_ATIVA") // LP, CAPTACAO_ATIVA, INDICACAO
+  observacoes    String?   @db.Text
+  proximoContato DateTime?
+  valorEstimado  Decimal?  @db.Decimal(10, 2)
+
+  // Relacionamentos
+  interacoes     Interacao[] @relation("ProspectInteracoes")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([placeId])
   @@index([createdAt])
+  @@index([vendedorId])
+  @@index([statusPipeline])
+  @@index([origem])
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -79,6 +99,13 @@ model Lead {
   utmMedium       String?
   utmCampaign     String?
 
+  // 🆕 Vendedor atribuído (BP-2026-02-28-001)
+  vendedorId      String?
+  vendedor        User?     @relation("VendedorLeads", fields: [vendedorId], references: [id])
+
+  // Relacionamentos
+  interacoes      Interacao[] @relation("LeadInteracoes")
+
   // Timestamps
   pesquisaEm      DateTime  @default(now())  // Data/hora da pesquisa
   contatadoEm     DateTime?                   // Quando foi contatado
@@ -90,6 +117,7 @@ model Lead {
   @@index([convertido])
   @@index([pesquisaEm])
   @@index([segmento])
+  @@index([vendedorId])
 }
 
 model Cliente {
@@ -171,10 +199,19 @@ model User {
   email         String    @unique
   name          String?
   password      String
-  role          String    @default("admin") // admin, viewer
+  role          String    @default("vendedor") // admin, vendedor
+  ativo         Boolean   @default(true)
   emailVerified DateTime?
+
+  // 🆕 Relacionamentos CRM (BP-2026-02-28-001)
+  prospectsAtribuidos Prospect[] @relation("VendedorProspects")
+  leadsAtribuidos     Lead[]     @relation("VendedorLeads")
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([role])
+  @@index([ativo])
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -239,4 +276,38 @@ model FollowUpTemplate {
 
   @@index([tipo])
   @@index([ativo])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🆕 INTERAÇÕES / TIMELINE (BP-2026-02-28-001)
+// ═══════════════════════════════════════════════════════════════
+
+model Interacao {
+  id          String    @id @default(cuid())
+
+  // Pode ser de Prospect OU Lead
+  prospectId  String?
+  leadId      String?
+  prospect    Prospect? @relation("ProspectInteracoes", fields: [prospectId], references: [id], onDelete: Cascade)
+  lead        Lead?     @relation("LeadInteracoes", fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Tipo de interação
+  tipo        String    // LIGACAO, EMAIL, WHATSAPP, REUNIAO, NOTA, STATUS_CHANGE
+
+  // Conteúdo
+  descricao   String    @db.Text
+
+  // Quem criou
+  criadoPorId String    // ID do usuário
+  criadoPor   String    // Nome do usuário (denormalizado para histórico)
+
+  // Metadados opcionais (ex: { de: "NOVO", para: "EM_CONTATO" } para STATUS_CHANGE)
+  metadata    Json?
+
+  createdAt   DateTime  @default(now())
+
+  @@index([prospectId])
+  @@index([leadId])
+  @@index([tipo])
+  @@index([createdAt])
 }

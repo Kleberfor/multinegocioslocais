@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,10 +13,11 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  Download,
 } from "lucide-react";
 import { DeleteLeadButton } from "@/components/admin/delete-lead-button";
-import type { Prisma } from "@prisma/client";
+import { LeadsFilters } from "@/components/admin/leads-filters";
+import { getCurrentUser } from "@/lib/get-current-user";
+import type { Prisma as PrismaTypes } from "@prisma/client";
 
 type LeadListItem = {
   id: string;
@@ -29,15 +29,78 @@ type LeadListItem = {
   scoreGeral: number | null;
   scoreGBP: number | null;
   scoreSite: number | null;
-  valorSugerido: Prisma.Decimal | null;
+  valorSugerido: PrismaTypes.Decimal | null;
   status: string;
   convertido: boolean;
   pesquisaEm: Date;
   contatadoEm: Date | null;
 };
 
-async function getLeads(): Promise<LeadListItem[]> {
+interface SearchParams {
+  search?: string;
+  status?: string;
+  score?: string;
+  segmento?: string;
+}
+
+async function getLeads(
+  filters: SearchParams,
+  userId: string,
+  isVendedor: boolean
+): Promise<LeadListItem[]> {
+  const where: PrismaTypes.LeadWhereInput = {};
+
+  // Se for vendedor, filtra automaticamente por seus próprios leads
+  if (isVendedor) {
+    where.vendedorId = userId;
+  }
+
+  // Filtro de busca por texto
+  if (filters.search) {
+    where.OR = [
+      { nome: { contains: filters.search, mode: "insensitive" } },
+      { negocio: { contains: filters.search, mode: "insensitive" } },
+      { telefone: { contains: filters.search } },
+      { email: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
+  // Filtro de status
+  if (filters.status && filters.status !== "all") {
+    const statusMap: Record<string, string> = {
+      novo: "NOVO",
+      em_contato: "CONTATADO",
+      qualificado: "QUALIFICADO",
+      proposta: "PROPOSTA",
+      negociacao: "NEGOCIANDO",
+      fechado: "CONVERTIDO",
+      perdido: "PERDIDO",
+    };
+    where.status = statusMap[filters.status] || filters.status.toUpperCase();
+  }
+
+  // Filtro de score
+  if (filters.score && filters.score !== "all") {
+    switch (filters.score) {
+      case "high":
+        where.scoreGeral = { gte: 70 };
+        break;
+      case "medium":
+        where.scoreGeral = { gte: 40, lt: 70 };
+        break;
+      case "low":
+        where.scoreGeral = { gte: 0, lt: 40 };
+        break;
+    }
+  }
+
+  // Filtro de segmento
+  if (filters.segmento && filters.segmento !== "all") {
+    where.segmento = filters.segmento;
+  }
+
   const leads = await prisma.lead.findMany({
+    where,
     orderBy: { pesquisaEm: "desc" },
     select: {
       id: true,
@@ -59,25 +122,42 @@ async function getLeads(): Promise<LeadListItem[]> {
   return leads as LeadListItem[];
 }
 
-async function getStats() {
+async function getStats(userId: string, isVendedor: boolean) {
+  const whereBase: PrismaTypes.LeadWhereInput = isVendedor
+    ? { vendedorId: userId }
+    : {};
+
   const [total, novos, contatados, convertidos] = await Promise.all([
-    prisma.lead.count(),
-    prisma.lead.count({ where: { status: "NOVO" } }),
-    prisma.lead.count({ where: { status: "CONTATADO" } }),
-    prisma.lead.count({ where: { convertido: true } }),
+    prisma.lead.count({ where: whereBase }),
+    prisma.lead.count({ where: { ...whereBase, status: "NOVO" } }),
+    prisma.lead.count({ where: { ...whereBase, status: "CONTATADO" } }),
+    prisma.lead.count({ where: { ...whereBase, convertido: true } }),
   ]);
 
   return { total, novos, contatados, convertidos };
 }
 
-export default async function LeadsPage() {
-  const session = await auth();
+interface PageProps {
+  searchParams: Promise<SearchParams>;
+}
 
-  if (!session) {
+export default async function LeadsPage({ searchParams }: PageProps) {
+  const user = await getCurrentUser();
+
+  if (!user) {
     redirect("/admin/login");
   }
 
-  const [leads, stats] = await Promise.all([getLeads(), getStats()]);
+  const isVendedor = user.role === "vendedor";
+  const params = await searchParams;
+
+  const [leads, stats] = await Promise.all([
+    getLeads(params, user.id, isVendedor),
+    getStats(user.id, isVendedor),
+  ]);
+
+  const hasFilters =
+    params.search || params.status || params.score || params.segmento;
 
   const statusConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
     NOVO: { color: "bg-blue-100 text-blue-700", icon: Clock, label: "Novo" },
@@ -91,17 +171,14 @@ export default async function LeadsPage() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Leads</h1>
+          <h1 className="text-3xl font-bold">
+            {isVendedor ? "Meus Leads" : "Leads"}
+          </h1>
           <p className="text-muted-foreground">
-            {leads.length} leads capturados
+            {leads.length} leads {hasFilters ? "encontrados" : "capturados"}
+            {isVendedor && " (apenas os seus)"}
           </p>
         </div>
-        <a href="/api/leads/export" download>
-          <Button variant="outline" className="gap-2">
-            <Download className="w-4 h-4" />
-            Exportar CSV
-          </Button>
-        </a>
       </div>
 
       {/* Stats Cards */}
@@ -155,6 +232,9 @@ export default async function LeadsPage() {
         </Card>
       </div>
 
+      {/* Filtros */}
+      <LeadsFilters />
+
       {/* Leads Table */}
       <Card>
         <CardContent className="p-0">
@@ -174,7 +254,9 @@ export default async function LeadsPage() {
                 {leads.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      Nenhum lead capturado ainda
+                      {hasFilters
+                        ? "Nenhum lead encontrado com os filtros aplicados."
+                        : "Nenhum lead capturado ainda"}
                     </td>
                   </tr>
                 ) : (
@@ -194,10 +276,15 @@ export default async function LeadsPage() {
                                 <Mail className="w-3 h-3 mr-1" />
                                 {lead.email}
                               </span>
-                              <span className="flex items-center">
+                              <a
+                                href={`https://wa.me/55${lead.telefone.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-green-600 hover:underline"
+                              >
                                 <Phone className="w-3 h-3 mr-1" />
                                 {lead.telefone}
-                              </span>
+                              </a>
                             </div>
                           </div>
                         </td>

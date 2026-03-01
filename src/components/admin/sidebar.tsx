@@ -10,11 +10,11 @@ import {
   Users,
   FileText,
   Search,
-  Settings,
   LogOut,
   CreditCard,
   UserPlus,
   Calendar,
+  Shield,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -22,9 +22,11 @@ interface AdminSidebarProps {
     name?: string | null;
     email?: string | null;
   };
+  role?: "admin" | "vendedor";
 }
 
-const menuItems = [
+// Menu para admin (acesso total)
+const adminMenuItems = [
   {
     label: "Dashboard",
     href: "/admin/dashboard",
@@ -62,8 +64,33 @@ const menuItems = [
   },
 ];
 
-export function AdminSidebar({ user }: AdminSidebarProps) {
+// Menu para vendedor (acesso restrito)
+const vendedorMenuItems = [
+  {
+    label: "Meu Dashboard",
+    href: "/admin/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Meus Prospects",
+    href: "/admin/prospects",
+    icon: Search,
+  },
+  {
+    label: "Meus Leads",
+    href: "/admin/leads",
+    icon: UserPlus,
+  },
+  {
+    label: "Meus Clientes",
+    href: "/admin/clientes",
+    icon: Users,
+  },
+];
+
+export function AdminSidebar({ user, role = "vendedor" }: AdminSidebarProps) {
   const pathname = usePathname();
+  const menuItems = role === "admin" ? adminMenuItems : vendedorMenuItems;
 
   return (
     <aside className="w-64 min-h-screen bg-slate-900 text-white flex flex-col">
@@ -78,6 +105,20 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             className="h-8 w-auto"
           />
         </Link>
+      </div>
+
+      {/* Role Badge */}
+      <div className="px-4 py-2">
+        <div
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+            role === "admin"
+              ? "bg-purple-500/20 text-purple-300"
+              : "bg-blue-500/20 text-blue-300"
+          }`}
+        >
+          <Shield className="w-3 h-3" />
+          {role === "admin" ? "Administrador" : "Vendedor"}
+        </div>
       </div>
 
       {/* Menu */}

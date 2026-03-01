@@ -45,7 +45,7 @@ interface ProspectType {
   id: string;
   nome: string;
   email: string | null;
-  score: number;
+  score: number | null;
   analise: unknown;
 }
 
