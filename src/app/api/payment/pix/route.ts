@@ -4,12 +4,21 @@ import { createPixPayment } from "@/lib/mercadopago";
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o token do Mercado Pago está configurado
+    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      console.error("MERCADOPAGO_ACCESS_TOKEN não configurado");
+      return NextResponse.json(
+        { error: "Configuração de pagamento incompleta. Entre em contato com o suporte." },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { clienteId, contratoId } = body;
 
     if (!clienteId || !contratoId) {
       return NextResponse.json(
-        { error: "Dados incompletos" },
+        { error: "Dados incompletos: clienteId e contratoId são obrigatórios" },
         { status: 400 }
       );
     }
@@ -23,16 +32,32 @@ export async function POST(request: NextRequest) {
       where: { id: contratoId },
     });
 
-    if (!cliente || !contrato) {
+    if (!cliente) {
       return NextResponse.json(
-        { error: "Cliente ou contrato não encontrado" },
+        { error: "Cliente não encontrado" },
         { status: 404 }
       );
     }
 
+    if (!contrato) {
+      return NextResponse.json(
+        { error: "Contrato não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Validar CPF/CNPJ
+    const cpfCnpj = cliente.cpfCnpj?.replace(/\D/g, "");
+    if (!cpfCnpj || (cpfCnpj.length !== 11 && cpfCnpj.length !== 14)) {
+      return NextResponse.json(
+        { error: "CPF/CNPJ do cliente inválido" },
+        { status: 400 }
+      );
+    }
+
     // Separar nome em primeiro e último
-    const nameParts = cliente.nome.split(" ");
-    const firstName = nameParts[0];
+    const nameParts = cliente.nome.trim().split(" ");
+    const firstName = nameParts[0] || "Cliente";
     const lastName = nameParts.slice(1).join(" ") || firstName;
 
     // Criar pagamento PIX no Mercado Pago
@@ -42,7 +67,7 @@ export async function POST(request: NextRequest) {
       email: cliente.email,
       firstName,
       lastName,
-      cpf: cliente.cpfCnpj,
+      cpf: cpfCnpj,
       contratoId: contrato.id,
     });
 
@@ -68,8 +93,37 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao criar pagamento PIX:", error);
+
+    // Tratar erros específicos do Mercado Pago
+    if (error instanceof Error) {
+      const errorMessage = error.message;
+
+      // Erros comuns do Mercado Pago
+      if (errorMessage.includes("invalid_token") || errorMessage.includes("unauthorized")) {
+        return NextResponse.json(
+          { error: "Erro de autenticação com o gateway de pagamento" },
+          { status: 500 }
+        );
+      }
+
+      if (errorMessage.includes("invalid_payer")) {
+        return NextResponse.json(
+          { error: "Dados do pagador inválidos. Verifique o CPF e email." },
+          { status: 400 }
+        );
+      }
+
+      // Retornar mensagem detalhada em desenvolvimento
+      if (process.env.NODE_ENV === "development") {
+        return NextResponse.json(
+          { error: `Erro: ${errorMessage}` },
+          { status: 500 }
+        );
+      }
+    }
+
     return NextResponse.json(
-      { error: "Erro ao criar pagamento PIX" },
+      { error: "Erro ao criar pagamento PIX. Tente novamente ou escolha outra forma de pagamento." },
       { status: 500 }
     );
   }

@@ -44,32 +44,49 @@ export interface CreateBoletoPaymentData {
 
 // Criar pagamento PIX
 export async function createPixPayment(data: CreatePixPaymentData) {
-  const payment = await paymentClient.create({
-    body: {
-      transaction_amount: data.amount,
-      description: data.description,
-      payment_method_id: "pix",
-      payer: {
-        email: data.email,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        identification: {
-          type: "CPF",
-          number: data.cpf.replace(/\D/g, ""),
-        },
-      },
-      external_reference: data.contratoId,
-    },
-  });
+  try {
+    const cpfLimpo = data.cpf.replace(/\D/g, "");
+    const identificationType = cpfLimpo.length === 14 ? "CNPJ" : "CPF";
 
-  return {
-    id: payment.id,
-    status: payment.status,
-    qrCode: payment.point_of_interaction?.transaction_data?.qr_code,
-    qrCodeBase64: payment.point_of_interaction?.transaction_data?.qr_code_base64,
-    ticketUrl: payment.point_of_interaction?.transaction_data?.ticket_url,
-    expirationDate: payment.date_of_expiration,
-  };
+    const payment = await paymentClient.create({
+      body: {
+        transaction_amount: data.amount,
+        description: data.description,
+        payment_method_id: "pix",
+        payer: {
+          email: data.email,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          identification: {
+            type: identificationType,
+            number: cpfLimpo,
+          },
+        },
+        external_reference: data.contratoId,
+      },
+    });
+
+    return {
+      id: payment.id,
+      status: payment.status,
+      qrCode: payment.point_of_interaction?.transaction_data?.qr_code,
+      qrCodeBase64: payment.point_of_interaction?.transaction_data?.qr_code_base64,
+      ticketUrl: payment.point_of_interaction?.transaction_data?.ticket_url,
+      expirationDate: payment.date_of_expiration,
+    };
+  } catch (error: unknown) {
+    console.error("Erro Mercado Pago PIX:", error);
+
+    // Extrair mensagem de erro do Mercado Pago
+    if (error && typeof error === "object" && "cause" in error) {
+      const cause = (error as { cause?: unknown }).cause;
+      if (cause && typeof cause === "object" && "message" in cause) {
+        throw new Error(`Mercado Pago: ${(cause as { message: string }).message}`);
+      }
+    }
+
+    throw error;
+  }
 }
 
 // Criar pagamento com Cartão
