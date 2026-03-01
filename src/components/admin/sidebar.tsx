@@ -15,6 +15,7 @@ import {
   UserPlus,
   Calendar,
   Shield,
+  UsersRound,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -61,6 +62,11 @@ const adminMenuItems = [
     label: "Pagamentos",
     href: "/admin/pagamentos",
     icon: CreditCard,
+  },
+  {
+    label: "Vendedores",
+    href: "/admin/vendedores",
+    icon: UsersRound,
   },
 ];
 
