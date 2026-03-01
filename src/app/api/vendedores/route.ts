@@ -28,6 +28,9 @@ export async function GET() {
         id: true,
         name: true,
         email: true,
+        cpf: true,
+        rg: true,
+        comissao: true,
         ativo: true,
         createdAt: true,
         _count: {
@@ -70,11 +73,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, password } = body;
+    const { name, email, password, cpf, rg, comissao } = body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !cpf) {
       return NextResponse.json(
-        { error: "Nome, email e senha são obrigatórios" },
+        { error: "Nome, email, CPF e senha são obrigatórios" },
         { status: 400 }
       );
     }
@@ -98,6 +101,9 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
+        cpf,
+        rg: rg || null,
+        comissao: comissao || null,
         role: "vendedor",
         ativo: true,
       },
@@ -105,6 +111,9 @@ export async function POST(request: NextRequest) {
         id: true,
         name: true,
         email: true,
+        cpf: true,
+        rg: true,
+        comissao: true,
         ativo: true,
         createdAt: true,
       },

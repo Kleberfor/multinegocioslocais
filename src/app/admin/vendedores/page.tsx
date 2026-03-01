@@ -14,6 +14,7 @@ async function getVendedores() {
       id: true,
       name: true,
       email: true,
+      comissao: true,
       ativo: true,
       createdAt: true,
       _count: {
@@ -116,6 +117,7 @@ export default async function VendedoresPage() {
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-4 font-medium">Nome</th>
                   <th className="text-left p-4 font-medium">Email</th>
+                  <th className="text-left p-4 font-medium">Comissão</th>
                   <th className="text-left p-4 font-medium">Prospects</th>
                   <th className="text-left p-4 font-medium">Leads</th>
                   <th className="text-left p-4 font-medium">Status</th>
@@ -126,7 +128,7 @@ export default async function VendedoresPage() {
               <tbody>
                 {vendedores.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="p-8 text-center text-muted-foreground">
                       Nenhum vendedor cadastrado
                     </td>
                   </tr>
@@ -144,6 +146,15 @@ export default async function VendedoresPage() {
                         </div>
                       </td>
                       <td className="p-4 text-muted-foreground">{vendedor.email}</td>
+                      <td className="p-4">
+                        {vendedor.comissao ? (
+                          <span className="font-medium text-green-600">
+                            {Number(vendedor.comissao)}%
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Target className="w-4 h-4 text-blue-500" />

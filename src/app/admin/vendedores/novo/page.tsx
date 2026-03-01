@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, UserPlus, Loader2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, UserPlus, Loader2, Eye, EyeOff, Percent } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,6 +16,9 @@ const vendedorSchema = z
   .object({
     name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
     email: z.string().email("Email inválido"),
+    cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
+    rg: z.string().optional(),
+    comissao: z.string().optional(),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
     confirmPassword: z.string(),
   })
@@ -25,6 +28,16 @@ const vendedorSchema = z
   });
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
+
+// Função para formatar CPF
+function formatCPF(value: string) {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 3) return numbers;
+  if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+  if (numbers.length <= 9)
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+  return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+}
 
 export default function NovoVendedorPage() {
   const router = useRouter();
@@ -36,10 +49,16 @@ export default function NovoVendedorPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<VendedorFormData>({
     resolver: zodResolver(vendedorSchema),
   });
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value);
+    setValue("cpf", formatted);
+  };
 
   const onSubmit = async (data: VendedorFormData) => {
     setIsLoading(true);
@@ -52,6 +71,9 @@ export default function NovoVendedorPage() {
         body: JSON.stringify({
           name: data.name,
           email: data.email,
+          cpf: data.cpf.replace(/\D/g, ""),
+          rg: data.rg,
+          comissao: data.comissao ? parseFloat(data.comissao) : null,
           password: data.password,
         }),
       });
@@ -103,7 +125,7 @@ export default function NovoVendedorPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
+              <Label htmlFor="name">Nome Completo *</Label>
               <Input
                 id="name"
                 placeholder="João da Silva"
@@ -115,7 +137,7 @@ export default function NovoVendedorPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -127,58 +149,115 @@ export default function NovoVendedorPage() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF *</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Mínimo 6 caracteres"
-                  {...register("password")}
+                  id="cpf"
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  {...register("cpf")}
+                  onChange={handleCPFChange}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
+                {errors.cpf && (
+                  <p className="text-sm text-red-500">{errors.cpf.message}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
-              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="rg">RG</Label>
+                <Input
+                  id="rg"
+                  placeholder="00.000.000-0"
+                  {...register("rg")}
+                />
+                {errors.rg && (
+                  <p className="text-sm text-red-500">{errors.rg.message}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Label htmlFor="comissao">Comissionamento (%)</Label>
               <div className="relative">
                 <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Repita a senha"
-                  {...register("confirmPassword")}
+                  id="comissao"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="100"
+                  placeholder="10"
+                  className="pr-10"
+                  {...register("comissao")}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
+                <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               </div>
-              {errors.confirmPassword && (
-                <p className="text-sm text-red-500">
-                  {errors.confirmPassword.message}
-                </p>
+              <p className="text-xs text-muted-foreground">
+                Porcentagem que o vendedor receberá por negócio fechado
+              </p>
+              {errors.comissao && (
+                <p className="text-sm text-red-500">{errors.comissao.message}</p>
               )}
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-4">Credenciais de Acesso</h3>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha *</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Mínimo 6 caracteres"
+                      {...register("password")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-sm text-red-500">{errors.password.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Repita a senha"
+                      {...register("confirmPassword")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-sm text-red-500">
+                      {errors.confirmPassword.message}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">

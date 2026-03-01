@@ -14,6 +14,10 @@ import {
   BarChart3,
   Send,
   MessageSquare,
+  AlertTriangle,
+  CheckCircle,
+  Lightbulb,
+  Target,
 } from "lucide-react";
 import { ProspectTimeline } from "@/components/admin/prospect-timeline";
 import { ProspectStatusSelect } from "@/components/admin/prospect-status-select";
@@ -21,6 +25,219 @@ import { AddInteracaoForm } from "@/components/admin/add-interacao-form";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+// Tipo para análise do prospect
+interface AnaliseData {
+  gbp?: {
+    problemas?: string[];
+    situacaoAtual?: string;
+    comoResolver?: string;
+  };
+  site?: {
+    problemas?: string[];
+    situacaoAtual?: string;
+    comoResolver?: string;
+  };
+  redes?: {
+    problemas?: string[];
+    situacaoAtual?: string;
+    comoResolver?: string;
+  };
+  planoAcao?: Array<{
+    fase: number;
+    periodo: string;
+    acoes: string[];
+    entregaveis: string[];
+  }>;
+  argumentos?: string[];
+}
+
+// Componente para exibir a análise
+function AnaliseSection({ analise }: { analise: AnaliseData }) {
+  const hasGBP = analise.gbp && (analise.gbp.problemas?.length || analise.gbp.situacaoAtual);
+  const hasSite = analise.site && (analise.site.problemas?.length || analise.site.situacaoAtual);
+  const hasRedes = analise.redes && (analise.redes.problemas?.length || analise.redes.situacaoAtual);
+  const hasPlanoAcao = analise.planoAcao && analise.planoAcao.length > 0;
+  const hasArgumentos = analise.argumentos && analise.argumentos.length > 0;
+
+  if (!hasGBP && !hasSite && !hasRedes && !hasPlanoAcao && !hasArgumentos) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Target className="w-5 h-5" />
+          Análise e Diagnóstico
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Argumentos de Fechamento */}
+        {hasArgumentos && (
+          <div>
+            <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4" />
+              Argumentos de Fechamento
+            </h4>
+            <ul className="space-y-2">
+              {analise.argumentos?.map((arg, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>{arg}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Diagnóstico GBP */}
+        {hasGBP && (
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3">Google Business Profile</h4>
+            {analise.gbp?.problemas && analise.gbp.problemas.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground mb-1">Problemas identificados:</p>
+                <ul className="space-y-1">
+                  {analise.gbp.problemas.map((p, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {analise.gbp?.situacaoAtual && (
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground mb-1">Situação atual:</p>
+                <p className="text-sm bg-muted/50 p-2 rounded">{analise.gbp.situacaoAtual}</p>
+              </div>
+            )}
+            {analise.gbp?.comoResolver && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Como resolver:</p>
+                <p className="text-sm bg-green-50 text-green-800 p-2 rounded">{analise.gbp.comoResolver}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Diagnóstico Site */}
+        {hasSite && (
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3">Site</h4>
+            {analise.site?.problemas && analise.site.problemas.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground mb-1">Problemas identificados:</p>
+                <ul className="space-y-1">
+                  {analise.site.problemas.map((p, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {analise.site?.situacaoAtual && (
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground mb-1">Situação atual:</p>
+                <p className="text-sm bg-muted/50 p-2 rounded">{analise.site.situacaoAtual}</p>
+              </div>
+            )}
+            {analise.site?.comoResolver && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Como resolver:</p>
+                <p className="text-sm bg-green-50 text-green-800 p-2 rounded">{analise.site.comoResolver}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Diagnóstico Redes */}
+        {hasRedes && (
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3">Redes Sociais</h4>
+            {analise.redes?.problemas && analise.redes.problemas.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground mb-1">Problemas identificados:</p>
+                <ul className="space-y-1">
+                  {analise.redes.problemas.map((p, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {analise.redes?.situacaoAtual && (
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground mb-1">Situação atual:</p>
+                <p className="text-sm bg-muted/50 p-2 rounded">{analise.redes.situacaoAtual}</p>
+              </div>
+            )}
+            {analise.redes?.comoResolver && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Como resolver:</p>
+                <p className="text-sm bg-green-50 text-green-800 p-2 rounded">{analise.redes.comoResolver}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Plano de Ação */}
+        {hasPlanoAcao && (
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3">Plano de Ação</h4>
+            <div className="space-y-4">
+              {analise.planoAcao?.map((fase) => (
+                <div key={fase.fase} className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">
+                      {fase.fase}
+                    </span>
+                    <span className="font-medium">Fase {fase.fase}</span>
+                    {fase.periodo && (
+                      <span className="text-sm text-muted-foreground">({fase.periodo})</span>
+                    )}
+                  </div>
+                  {fase.acoes && fase.acoes.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-xs text-muted-foreground mb-1">Ações:</p>
+                      <ul className="text-sm space-y-1">
+                        {fase.acoes.map((acao, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-primary">•</span>
+                            {acao}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {fase.entregaveis && fase.entregaveis.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Entregáveis:</p>
+                      <ul className="text-sm space-y-1">
+                        {fase.entregaveis.map((ent, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <CheckCircle className="w-3 h-3 text-green-500 mt-1 flex-shrink-0" />
+                            {ent}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -205,6 +422,11 @@ export default async function ProspectDetalhePage({ params }: PageProps) {
                 <p className="whitespace-pre-wrap">{prospect.observacoes}</p>
               </CardContent>
             </Card>
+          )}
+
+          {/* Análise e Diagnóstico */}
+          {prospect.analise && (
+            <AnaliseSection analise={prospect.analise as AnaliseData} />
           )}
 
           {/* Timeline */}

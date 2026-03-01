@@ -203,6 +203,11 @@ model User {
   ativo         Boolean   @default(true)
   emailVerified DateTime?
 
+  // Dados pessoais do vendedor
+  cpf           String?
+  rg            String?
+  comissao      Decimal?  @db.Decimal(5, 2) // Porcentagem (ex: 10.00 = 10%)
+
   // 🆕 Relacionamentos CRM (BP-2026-02-28-001)
   prospectsAtribuidos Prospect[] @relation("VendedorProspects")
   leadsAtribuidos     Lead[]     @relation("VendedorLeads")

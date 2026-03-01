@@ -5,15 +5,19 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Eye, EyeOff } from "lucide-react";
+import { Loader2, Save, Eye, EyeOff, Percent } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 
 const editVendedorSchema = z
   .object({
     name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
     email: z.string().email("Email inválido"),
+    cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
+    rg: z.string().optional(),
+    comissao: z.string().optional(),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
   })
@@ -49,7 +53,20 @@ interface EditVendedorFormProps {
     id: string;
     name: string | null;
     email: string;
+    cpf: string | null;
+    rg: string | null;
+    comissao: Prisma.Decimal | null;
   };
+}
+
+// Função para formatar CPF
+function formatCPF(value: string) {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 3) return numbers;
+  if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+  if (numbers.length <= 9)
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+  return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
 }
 
 export function EditVendedorForm({ vendedor }: EditVendedorFormProps) {
@@ -63,16 +80,25 @@ export function EditVendedorForm({ vendedor }: EditVendedorFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<EditVendedorFormData>({
     resolver: zodResolver(editVendedorSchema),
     defaultValues: {
       name: vendedor.name || "",
       email: vendedor.email,
+      cpf: vendedor.cpf ? formatCPF(vendedor.cpf) : "",
+      rg: vendedor.rg || "",
+      comissao: vendedor.comissao ? String(vendedor.comissao) : "",
       password: "",
       confirmPassword: "",
     },
   });
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value);
+    setValue("cpf", formatted);
+  };
 
   const onSubmit = async (data: EditVendedorFormData) => {
     setIsLoading(true);
@@ -80,10 +106,21 @@ export function EditVendedorForm({ vendedor }: EditVendedorFormProps) {
     setSuccess(false);
 
     try {
-      const updateData: { name: string; email: string; password?: string } = {
+      const updateData: {
+        name: string;
+        email: string;
+        cpf: string;
+        rg?: string | null;
+        comissao?: number | null;
+        password?: string;
+      } = {
         name: data.name,
         email: data.email,
+        cpf: data.cpf.replace(/\D/g, ""),
       };
+
+      updateData.rg = data.rg || null;
+      updateData.comissao = data.comissao ? parseFloat(data.comissao) : null;
 
       if (data.password && data.password.length > 0) {
         updateData.password = data.password;
@@ -144,6 +181,53 @@ export function EditVendedorForm({ vendedor }: EditVendedorFormProps) {
         />
         {errors.email && (
           <p className="text-sm text-red-500">{errors.email.message}</p>
+        )}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="cpf">CPF</Label>
+          <Input
+            id="cpf"
+            placeholder="000.000.000-00"
+            maxLength={14}
+            {...register("cpf")}
+            onChange={handleCPFChange}
+          />
+          {errors.cpf && (
+            <p className="text-sm text-red-500">{errors.cpf.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="rg">RG</Label>
+          <Input id="rg" placeholder="00.000.000-0" {...register("rg")} />
+          {errors.rg && (
+            <p className="text-sm text-red-500">{errors.rg.message}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="comissao">Comissionamento (%)</Label>
+        <div className="relative">
+          <Input
+            id="comissao"
+            type="number"
+            step="0.5"
+            min="0"
+            max="100"
+            placeholder="10"
+            className="pr-10"
+            {...register("comissao")}
+          />
+          <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Porcentagem que o vendedor receberá por negócio fechado
+        </p>
+        {errors.comissao && (
+          <p className="text-sm text-red-500">{errors.comissao.message}</p>
         )}
       </div>
 

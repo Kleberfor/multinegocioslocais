@@ -12,6 +12,9 @@ import {
   TrendingUp,
   UserCheck,
   UserX,
+  CreditCard,
+  FileText,
+  Percent,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { EditVendedorForm } from "@/components/admin/edit-vendedor-form";
@@ -39,6 +42,9 @@ export default async function VendedorDetalhePage({ params }: PageProps) {
       id: true,
       name: true,
       email: true,
+      cpf: true,
+      rg: true,
+      comissao: true,
       ativo: true,
       createdAt: true,
       updatedAt: true,
@@ -277,6 +283,40 @@ export default async function VendedorDetalhePage({ params }: PageProps) {
                   <p className="text-sm">{vendedor.email}</p>
                 </div>
               </div>
+              {vendedor.cpf && (
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">CPF</p>
+                    <p className="text-sm font-mono">
+                      {vendedor.cpf.replace(
+                        /(\d{3})(\d{3})(\d{3})(\d{2})/,
+                        "$1.$2.$3-$4"
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {vendedor.rg && (
+                <div className="flex items-center gap-3">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">RG</p>
+                    <p className="text-sm font-mono">{vendedor.rg}</p>
+                  </div>
+                </div>
+              )}
+              {vendedor.comissao && (
+                <div className="flex items-center gap-3">
+                  <Percent className="w-4 h-4 text-green-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Comissão</p>
+                    <p className="text-sm font-bold text-green-600">
+                      {Number(vendedor.comissao)}%
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <div>

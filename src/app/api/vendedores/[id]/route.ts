@@ -32,6 +32,9 @@ export async function GET(
         id: true,
         name: true,
         email: true,
+        cpf: true,
+        rg: true,
+        comissao: true,
         ativo: true,
         createdAt: true,
         updatedAt: true,
@@ -84,7 +87,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, email, password, ativo } = body;
+    const { name, email, password, ativo, cpf, rg, comissao } = body;
 
     // Verificar se vendedor existe
     const vendedor = await prisma.user.findUnique({
@@ -118,11 +121,17 @@ export async function PUT(
       email?: string;
       password?: string;
       ativo?: boolean;
+      cpf?: string;
+      rg?: string | null;
+      comissao?: number | null;
     } = {};
 
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (typeof ativo === "boolean") updateData.ativo = ativo;
+    if (cpf) updateData.cpf = cpf;
+    if (rg !== undefined) updateData.rg = rg || null;
+    if (comissao !== undefined) updateData.comissao = comissao || null;
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
@@ -134,6 +143,9 @@ export async function PUT(
         id: true,
         name: true,
         email: true,
+        cpf: true,
+        rg: true,
+        comissao: true,
         ativo: true,
         updatedAt: true,
       },
