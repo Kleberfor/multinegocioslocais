@@ -1,9 +1,12 @@
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mail, Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Mail, Phone, Eye, MessageSquare } from "lucide-react";
+import Link from "next/link";
 import type { Prisma } from "@prisma/client";
+import { ClientesFilters } from "@/components/admin/clientes-filters";
+import { getCurrentUser } from "@/lib/get-current-user";
 
 type ClienteWithContratos = {
   id: string;
@@ -12,6 +15,7 @@ type ClienteWithContratos = {
   telefone: string;
   cpfCnpj: string;
   negocio: string;
+  createdAt: Date;
   contratos: {
     id: string;
     valor: Prisma.Decimal;
@@ -19,8 +23,33 @@ type ClienteWithContratos = {
   }[];
 };
 
-async function getClientes(): Promise<ClienteWithContratos[]> {
+interface SearchParams {
+  search?: string;
+  status?: string;
+}
+
+async function getClientes(filters: SearchParams): Promise<ClienteWithContratos[]> {
+  const where: Prisma.ClienteWhereInput = {};
+
+  // Filtro de busca por texto
+  if (filters.search) {
+    where.OR = [
+      { nome: { contains: filters.search, mode: "insensitive" } },
+      { negocio: { contains: filters.search, mode: "insensitive" } },
+      { email: { contains: filters.search, mode: "insensitive" } },
+      { cpfCnpj: { contains: filters.search } },
+    ];
+  }
+
+  // Filtro de status do contrato
+  if (filters.status && filters.status !== "all") {
+    where.contratos = {
+      some: { status: filters.status },
+    };
+  }
+
   const clientes = await prisma.cliente.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       contratos: {
@@ -32,14 +61,21 @@ async function getClientes(): Promise<ClienteWithContratos[]> {
   return clientes as ClienteWithContratos[];
 }
 
-export default async function ClientesPage() {
-  const session = await auth();
+interface PageProps {
+  searchParams: Promise<SearchParams>;
+}
 
-  if (!session) {
+export default async function ClientesPage({ searchParams }: PageProps) {
+  const user = await getCurrentUser();
+
+  if (!user) {
     redirect("/admin/login");
   }
 
-  const clientes = await getClientes();
+  const params = await searchParams;
+  const clientes = await getClientes(params);
+
+  const hasFilters = params.search || params.status;
 
   const formatCpfCnpj = (value: string) => {
     const clean = value.replace(/\D/g, "");
@@ -53,12 +89,17 @@ export default async function ClientesPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Clientes</h1>
-        <p className="text-muted-foreground">
-          {clientes.length} clientes cadastrados
-        </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Clientes</h1>
+          <p className="text-muted-foreground">
+            {clientes.length} clientes {hasFilters ? "encontrados" : "cadastrados"}
+          </p>
+        </div>
       </div>
+
+      {/* Filtros */}
+      <ClientesFilters />
 
       <Card>
         <CardContent className="p-0">
@@ -72,13 +113,16 @@ export default async function ClientesPage() {
                   <th className="text-left p-4 font-medium">Contato</th>
                   <th className="text-left p-4 font-medium">Contrato</th>
                   <th className="text-left p-4 font-medium">Valor</th>
+                  <th className="text-left p-4 font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {clientes.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      Nenhum cliente cadastrado
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      {hasFilters
+                        ? "Nenhum cliente encontrado com os filtros aplicados."
+                        : "Nenhum cliente cadastrado"}
                     </td>
                   </tr>
                 ) : (
@@ -105,10 +149,12 @@ export default async function ClientesPage() {
                               {cliente.email}
                             </a>
                             <a
-                              href={`tel:${cliente.telefone}`}
-                              className="flex items-center text-sm text-muted-foreground hover:text-primary"
+                              href={`https://wa.me/55${cliente.telefone.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center text-sm text-green-600 hover:underline"
                             >
-                              <Phone className="w-3 h-3 mr-1" />
+                              <MessageSquare className="w-3 h-3 mr-1" />
                               {cliente.telefone}
                             </a>
                           </div>
@@ -132,12 +178,22 @@ export default async function ClientesPage() {
                         </td>
                         <td className="p-4">
                           {contrato ? (
-                            <p className="font-medium">
+                            <p className="font-medium text-green-600">
                               R$ {Number(contrato.valor).toLocaleString("pt-BR")}
                             </p>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Link href={`/admin/clientes/${cliente.id}`}>
+                              <Button variant="outline" size="sm">
+                                <Eye className="w-4 h-4 mr-1" />
+                                Ver
+                              </Button>
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );
