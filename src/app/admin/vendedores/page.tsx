@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserPlus, UserCheck, UserX, Target, TrendingUp } from "lucide-react";
+import { Users, UserPlus, UserCheck, UserX, Target, TrendingUp, Pencil } from "lucide-react";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { ToggleVendedorStatus } from "@/components/admin/toggle-vendedor-status";
+import { DeleteVendedorButton } from "@/components/admin/delete-vendedor-button";
 
 async function getVendedores() {
   const vendedores = await prisma.user.findMany({
@@ -136,14 +137,14 @@ export default async function VendedoresPage() {
                   vendedores.map((vendedor) => (
                     <tr key={vendedor.id} className="border-b hover:bg-muted/30">
                       <td className="p-4">
-                        <div className="flex items-center gap-3">
+                        <Link href={`/admin/vendedores/${vendedor.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                             <span className="text-primary font-medium">
                               {vendedor.name?.charAt(0).toUpperCase() || "V"}
                             </span>
                           </div>
-                          <span className="font-medium">{vendedor.name || "Sem nome"}</span>
-                        </div>
+                          <span className="font-medium text-primary hover:underline">{vendedor.name || "Sem nome"}</span>
+                        </Link>
                       </td>
                       <td className="p-4 text-muted-foreground">{vendedor.email}</td>
                       <td className="p-4">
@@ -185,14 +186,18 @@ export default async function VendedoresPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <Link href={`/admin/vendedores/${vendedor.id}`}>
+                          <Link href={`/admin/vendedores/${vendedor.id}/editar`}>
                             <Button variant="outline" size="sm">
-                              Editar
+                              <Pencil className="w-4 h-4" />
                             </Button>
                           </Link>
                           <ToggleVendedorStatus
                             vendedorId={vendedor.id}
                             ativo={vendedor.ativo}
+                          />
+                          <DeleteVendedorButton
+                            vendedorId={vendedor.id}
+                            vendedorName={vendedor.name || "Vendedor"}
                           />
                         </div>
                       </td>
