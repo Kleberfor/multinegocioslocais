@@ -101,6 +101,44 @@ export async function PUT(
       );
     }
 
+    // Validações detalhadas
+    const errors: string[] = [];
+
+    if (name !== undefined && name.trim().length < 3) {
+      errors.push("Nome deve ter pelo menos 3 caracteres");
+    }
+
+    if (email !== undefined) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push("Email inválido");
+      }
+    }
+
+    if (cpf !== undefined) {
+      const cpfLimpo = cpf.replace(/\D/g, "");
+      if (cpfLimpo.length !== 11) {
+        errors.push("CPF deve ter 11 dígitos");
+      }
+    }
+
+    if (password !== undefined && password.length < 6) {
+      errors.push("Senha deve ter pelo menos 6 caracteres");
+    }
+
+    if (comissao !== null && comissao !== undefined) {
+      const comissaoNum = Number(comissao);
+      if (isNaN(comissaoNum) || comissaoNum < 0 || comissaoNum > 100) {
+        errors.push("Comissão deve ser um valor entre 0 e 100");
+      }
+    }
+
+    if (errors.length > 0) {
+      return NextResponse.json(
+        { error: errors.join(". ") },
+        { status: 400 }
+      );
+    }
+
     // Verificar se email já existe em outro usuário
     if (email && email !== vendedor.email) {
       const existingUser = await prisma.user.findUnique({
@@ -109,9 +147,26 @@ export async function PUT(
 
       if (existingUser) {
         return NextResponse.json(
-          { error: "Este email já está cadastrado" },
+          { error: "Este email já está cadastrado para outro usuário" },
           { status: 400 }
         );
+      }
+    }
+
+    // Verificar se CPF já existe em outro usuário
+    if (cpf) {
+      const cpfLimpo = cpf.replace(/\D/g, "");
+      if (cpfLimpo !== vendedor.cpf) {
+        const existingCpf = await prisma.user.findFirst({
+          where: { cpf: cpfLimpo, id: { not: id } },
+        });
+
+        if (existingCpf) {
+          return NextResponse.json(
+            { error: "Este CPF já está cadastrado para outro usuário" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -126,12 +181,12 @@ export async function PUT(
       comissao?: number | null;
     } = {};
 
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
+    if (name) updateData.name = name.trim();
+    if (email) updateData.email = email.toLowerCase().trim();
     if (typeof ativo === "boolean") updateData.ativo = ativo;
-    if (cpf) updateData.cpf = cpf;
-    if (rg !== undefined) updateData.rg = rg || null;
-    if (comissao !== undefined) updateData.comissao = comissao || null;
+    if (cpf) updateData.cpf = cpf.replace(/\D/g, "");
+    if (rg !== undefined) updateData.rg = rg?.trim() || null;
+    if (comissao !== undefined) updateData.comissao = comissao ? Number(comissao) : null;
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
@@ -154,8 +209,19 @@ export async function PUT(
     return NextResponse.json(updatedVendedor);
   } catch (error) {
     console.error("Erro ao atualizar vendedor:", error);
+
+    // Tratar erros específicos do Prisma
+    if (error instanceof Error) {
+      if (error.message.includes("Unique constraint")) {
+        return NextResponse.json(
+          { error: "Email ou CPF já cadastrado no sistema" },
+          { status: 400 }
+        );
+      }
+    }
+
     return NextResponse.json(
-      { error: "Erro ao atualizar vendedor" },
+      { error: "Erro interno ao atualizar vendedor. Tente novamente." },
       { status: 500 }
     );
   }

@@ -75,21 +75,69 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, email, password, cpf, rg, comissao } = body;
 
-    if (!name || !email || !password || !cpf) {
+    // Validações detalhadas
+    const errors: string[] = [];
+
+    if (!name || name.trim().length < 3) {
+      errors.push("Nome deve ter pelo menos 3 caracteres");
+    }
+
+    if (!email) {
+      errors.push("Email é obrigatório");
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push("Email inválido");
+    }
+
+    if (!cpf) {
+      errors.push("CPF é obrigatório");
+    } else {
+      const cpfLimpo = cpf.replace(/\D/g, "");
+      if (cpfLimpo.length !== 11) {
+        errors.push("CPF deve ter 11 dígitos");
+      }
+    }
+
+    if (!password) {
+      errors.push("Senha é obrigatória");
+    } else if (password.length < 6) {
+      errors.push("Senha deve ter pelo menos 6 caracteres");
+    }
+
+    if (comissao !== null && comissao !== undefined) {
+      const comissaoNum = Number(comissao);
+      if (isNaN(comissaoNum) || comissaoNum < 0 || comissaoNum > 100) {
+        errors.push("Comissão deve ser um valor entre 0 e 100");
+      }
+    }
+
+    if (errors.length > 0) {
       return NextResponse.json(
-        { error: "Nome, email, CPF e senha são obrigatórios" },
+        { error: errors.join(". ") },
         { status: 400 }
       );
     }
 
     // Verificar se email já existe
-    const existingUser = await prisma.user.findUnique({
+    const existingEmail = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingEmail) {
       return NextResponse.json(
-        { error: "Este email já está cadastrado" },
+        { error: "Este email já está cadastrado para outro usuário" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar se CPF já existe
+    const cpfLimpo = cpf.replace(/\D/g, "");
+    const existingCpf = await prisma.user.findFirst({
+      where: { cpf: cpfLimpo },
+    });
+
+    if (existingCpf) {
+      return NextResponse.json(
+        { error: "Este CPF já está cadastrado para outro usuário" },
         { status: 400 }
       );
     }
@@ -98,12 +146,12 @@ export async function POST(request: NextRequest) {
 
     const vendedor = await prisma.user.create({
       data: {
-        name,
-        email,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
-        cpf,
-        rg: rg || null,
-        comissao: comissao || null,
+        cpf: cpfLimpo,
+        rg: rg?.trim() || null,
+        comissao: comissao ? Number(comissao) : null,
         role: "vendedor",
         ativo: true,
       },
@@ -122,8 +170,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(vendedor, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar vendedor:", error);
+
+    // Tratar erros específicos do Prisma
+    if (error instanceof Error) {
+      if (error.message.includes("Unique constraint")) {
+        return NextResponse.json(
+          { error: "Email ou CPF já cadastrado no sistema" },
+          { status: 400 }
+        );
+      }
+    }
+
     return NextResponse.json(
-      { error: "Erro ao criar vendedor" },
+      { error: "Erro interno ao criar vendedor. Tente novamente." },
       { status: 500 }
     );
   }
