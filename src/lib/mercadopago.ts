@@ -75,13 +75,33 @@ export async function createPixPayment(data: CreatePixPaymentData) {
       expirationDate: payment.date_of_expiration,
     };
   } catch (error: unknown) {
-    console.error("Erro Mercado Pago PIX:", error);
+    console.error("Erro Mercado Pago PIX:", JSON.stringify(error, null, 2));
 
     // Extrair mensagem de erro do Mercado Pago
-    if (error && typeof error === "object" && "cause" in error) {
-      const cause = (error as { cause?: unknown }).cause;
-      if (cause && typeof cause === "object" && "message" in cause) {
-        throw new Error(`Mercado Pago: ${(cause as { message: string }).message}`);
+    if (error && typeof error === "object") {
+      const errorObj = error as Record<string, unknown>;
+
+      // Log completo do erro
+      console.error("Erro detalhado:", {
+        message: errorObj.message,
+        cause: errorObj.cause,
+        status: errorObj.status,
+        name: errorObj.name,
+      });
+
+      // Tentar extrair causa
+      if ("cause" in errorObj && errorObj.cause) {
+        const cause = errorObj.cause as Record<string, unknown>;
+        console.error("Causa do erro:", JSON.stringify(cause, null, 2));
+
+        if (cause.message) {
+          throw new Error(`Mercado Pago: ${cause.message}`);
+        }
+      }
+
+      // Tentar extrair mensagem
+      if (errorObj.message) {
+        throw new Error(`Mercado Pago: ${errorObj.message}`);
       }
     }
 

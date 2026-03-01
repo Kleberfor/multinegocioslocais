@@ -93,33 +93,34 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao criar pagamento PIX:", error);
+    console.error("Erro completo (JSON):", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
 
     // Tratar erros específicos do Mercado Pago
     if (error instanceof Error) {
       const errorMessage = error.message;
+      console.error("Mensagem do erro:", errorMessage);
 
       // Erros comuns do Mercado Pago
-      if (errorMessage.includes("invalid_token") || errorMessage.includes("unauthorized")) {
+      if (errorMessage.includes("invalid_token") || errorMessage.includes("unauthorized") || errorMessage.includes("401")) {
         return NextResponse.json(
-          { error: "Erro de autenticação com o gateway de pagamento" },
+          { error: "Erro de autenticação com o gateway de pagamento. Verifique as credenciais." },
           { status: 500 }
         );
       }
 
-      if (errorMessage.includes("invalid_payer")) {
+      if (errorMessage.includes("invalid_payer") || errorMessage.includes("payer")) {
         return NextResponse.json(
           { error: "Dados do pagador inválidos. Verifique o CPF e email." },
           { status: 400 }
         );
       }
 
-      // Retornar mensagem detalhada em desenvolvimento
-      if (process.env.NODE_ENV === "development") {
-        return NextResponse.json(
-          { error: `Erro: ${errorMessage}` },
-          { status: 500 }
-        );
-      }
+      // Em produção, mostrar erro genérico mas logar o detalhe
+      // Temporariamente, retornar erro detalhado para debug
+      return NextResponse.json(
+        { error: `Erro: ${errorMessage}` },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(
