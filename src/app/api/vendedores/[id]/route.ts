@@ -3,6 +3,37 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
+// Função para validar CPF com algoritmo oficial
+function validarCPF(cpf: string): boolean {
+  const cpfLimpo = cpf.replace(/\D/g, "");
+
+  // Deve ter 11 dígitos
+  if (cpfLimpo.length !== 11) return false;
+
+  // Não pode ser sequência de números iguais
+  if (/^(\d)\1+$/.test(cpfLimpo)) return false;
+
+  // Validação do primeiro dígito verificador
+  let soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(cpfLimpo.charAt(i)) * (10 - i);
+  }
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpfLimpo.charAt(9))) return false;
+
+  // Validação do segundo dígito verificador
+  soma = 0;
+  for (let i = 0; i < 10; i++) {
+    soma += parseInt(cpfLimpo.charAt(i)) * (11 - i);
+  }
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpfLimpo.charAt(10))) return false;
+
+  return true;
+}
+
 // GET - Buscar vendedor específico
 export async function GET(
   request: NextRequest,
@@ -114,11 +145,8 @@ export async function PUT(
       }
     }
 
-    if (cpf !== undefined) {
-      const cpfLimpo = cpf.replace(/\D/g, "");
-      if (cpfLimpo.length !== 11) {
-        errors.push("CPF deve ter 11 dígitos");
-      }
+    if (cpf !== undefined && !validarCPF(cpf)) {
+      errors.push("CPF inválido");
     }
 
     if (password !== undefined && password.length < 6) {
