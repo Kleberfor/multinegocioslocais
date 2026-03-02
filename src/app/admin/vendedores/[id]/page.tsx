@@ -40,7 +40,7 @@ export default async function VendedorDashboardPage({ params }: PageProps) {
   const { id } = await params;
 
   const vendedor = await prisma.user.findUnique({
-    where: { id, role: "vendedor" },
+    where: { id },
     select: {
       id: true,
       name: true,
@@ -49,12 +49,14 @@ export default async function VendedorDashboardPage({ params }: PageProps) {
       rg: true,
       comissao: true,
       ativo: true,
+      role: true,
       createdAt: true,
       updatedAt: true,
       _count: {
         select: {
-          prospectsAtribuidos: true,
-          leadsAtribuidos: true,
+          prospects: true,
+          leads: true,
+          clientes: true,
         },
       },
     },
@@ -94,26 +96,28 @@ export default async function VendedorDashboardPage({ params }: PageProps) {
     orderBy: { createdAt: "desc" },
   });
 
-  // Buscar clientes convertidos desses leads
-  const clientesIds = leads.filter(l => l.clienteId).map(l => l.clienteId as string);
+  // Buscar clientes do vendedor (atribuídos diretamente)
   const clientes = await prisma.cliente.findMany({
-    where: { id: { in: clientesIds } },
+    where: { vendedorId: id },
     select: {
       id: true,
       nome: true,
       negocio: true,
       email: true,
+      telefone: true,
       createdAt: true,
       contratos: {
         select: {
           id: true,
           valor: true,
+          valorMensal: true,
           status: true,
           parcelas: true,
           assinadoEm: true,
         },
       },
     },
+    orderBy: { createdAt: "desc" },
   });
 
   // Calcular estatísticas
@@ -183,6 +187,11 @@ export default async function VendedorDashboardPage({ params }: PageProps) {
                 <h1 className="text-2xl font-bold">
                   {vendedor.name || "Sem nome"}
                 </h1>
+                {vendedor.role === "admin" && (
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                    Admin
+                  </span>
+                )}
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
                     vendedor.ativo
