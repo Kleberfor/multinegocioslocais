@@ -25,6 +25,7 @@ import { ProspectStatusSelect } from "@/components/admin/prospect-status-select"
 import { AddInteracaoForm } from "@/components/admin/add-interacao-form";
 import { ConverterProspectModal } from "@/components/admin/converter-prospect-modal";
 import { ReatribuirProspect } from "@/components/admin/reatribuir-prospect";
+import { ResendPropostaButton } from "@/components/admin/resend-proposta-button";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -527,6 +528,20 @@ export default async function ProspectDetalhePage({ params }: PageProps) {
                   Ver Proposta
                 </Button>
               </Link>
+
+              {prospect.email && (
+                <div className="w-full">
+                  <ResendPropostaButton
+                    tipo="prospect"
+                    id={prospect.id}
+                    nome={prospect.nome}
+                    email={prospect.email}
+                    variant="outline"
+                    size="default"
+                    showText={true}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 

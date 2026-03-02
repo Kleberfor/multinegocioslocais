@@ -380,6 +380,113 @@ export async function enviarEmailScore(data: ScoreEmailData) {
   }
 }
 
+interface ReenvioPropostaData {
+  para: string;
+  nome: string;
+  negocio: string;
+  propostaUrl: string;
+  valorEstimado?: number;
+}
+
+/**
+ * Reenvia email com link da proposta para prospect/lead
+ */
+export async function enviarReenvioProposta(data: ReenvioPropostaData) {
+  if (!resend) {
+    console.log("[Email] Resend não configurado, pulando reenvio de proposta");
+    return { success: false, error: "Email não configurado" };
+  }
+
+  const primeiroNome = data.nome.split(" ")[0];
+
+  try {
+    const { data: resultado, error } = await resend.emails.send({
+      from: `MultiNegócios Locais <${FROM_EMAIL}>`,
+      to: [data.para],
+      subject: `${primeiroNome}, sua proposta personalizada está disponível!`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+
+            <!-- Header -->
+            <div style="background-color: #2563eb; color: white; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Sua Proposta Está Pronta!</h1>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 32px;">
+              <p style="font-size: 18px; margin: 0 0 16px 0;">Olá, <strong>${primeiroNome}</strong>!</p>
+
+              <p style="color: #374151; line-height: 1.6;">
+                Estamos reenviando a proposta personalizada para o seu negócio <strong>${data.negocio}</strong>.
+              </p>
+
+              <p style="color: #374151; line-height: 1.6;">
+                Analisamos a presença digital do seu negócio e preparamos um plano de ação completo para ajudá-lo a atrair mais clientes.
+              </p>
+
+              ${data.valorEstimado ? `
+              <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #166534; font-size: 14px;">Investimento a partir de</p>
+                <p style="margin: 0; font-size: 32px; font-weight: bold; color: #16a34a;">
+                  R$ ${data.valorEstimado.toLocaleString("pt-BR")}
+                </p>
+              </div>
+              ` : ""}
+
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${data.propostaUrl}" style="display: inline-block; padding: 16px 32px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                  📋 Ver Minha Proposta
+                </a>
+              </div>
+
+              <div style="background-color: #fefce8; border: 1px solid #fde047; border-radius: 8px; padding: 16px; margin-top: 24px;">
+                <p style="margin: 0; color: #854d0e; font-size: 14px;">
+                  ⏰ <strong>Proposta com condições especiais!</strong> Entre em contato para garantir as melhores condições.
+                </p>
+              </div>
+
+              <div style="margin-top: 24px; text-align: center;">
+                <a href="https://wa.me/5511916682510?text=${encodeURIComponent(`Olá! Recebi a proposta para ${data.negocio} e gostaria de saber mais!`)}" style="display: inline-block; padding: 12px 24px; background-color: #25d366; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
+                  💬 Falar com Especialista
+                </a>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding: 24px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
+                MultiNegócios Locais - Transformando negócios locais
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                WhatsApp: (11) 91668-2510 | multinegocioslocais.com.br
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("[Email] Erro ao reenviar proposta:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log("[Email] Proposta reenviada:", resultado?.id);
+    return { success: true, id: resultado?.id };
+  } catch (error) {
+    console.error("[Email] Erro ao reenviar proposta:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
 export async function enviarEmailFollowUp(data: FollowUpEmailData) {
   if (!resend) {
     console.log("[Email] Resend não configurado, pulando follow-up");

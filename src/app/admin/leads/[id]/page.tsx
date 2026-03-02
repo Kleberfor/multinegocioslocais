@@ -19,6 +19,7 @@ import {
 import { LeadActions } from "@/components/admin/lead-actions";
 import { EditProposta } from "@/components/admin/edit-proposta";
 import { EditObservacoes } from "@/components/admin/edit-observacoes";
+import { ResendPropostaButton } from "@/components/admin/resend-proposta-button";
 import type { Prisma } from "@prisma/client";
 
 // Tipos para dados estruturados do Lead
@@ -322,6 +323,19 @@ export default async function LeadDetailPage({
                       </span>
                     ))}
                   </div>
+                </div>
+
+                {/* Botão de Reenviar Proposta */}
+                <div className="mt-4 pt-4 border-t">
+                  <ResendPropostaButton
+                    tipo="lead"
+                    id={lead.id}
+                    nome={lead.nome}
+                    email={lead.email}
+                    variant="outline"
+                    size="default"
+                    showText={true}
+                  />
                 </div>
               </CardContent>
             </Card>
