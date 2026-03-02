@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DashboardCharts } from "./charts-section";
+
+// Forçar renderização dinâmica (sem cache)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { getCurrentUser, type CurrentUser } from "@/lib/get-current-user";
 import { Prisma } from "@prisma/client";
 

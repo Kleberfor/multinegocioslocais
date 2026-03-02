@@ -19,6 +19,10 @@ import { LeadsFilters } from "@/components/admin/leads-filters";
 import { getCurrentUser } from "@/lib/get-current-user";
 import type { Prisma as PrismaTypes } from "@prisma/client";
 
+// Forçar renderização dinâmica (sem cache)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type LeadListItem = {
   id: string;
   nome: string;

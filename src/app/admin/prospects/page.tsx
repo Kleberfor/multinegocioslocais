@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 import { DeleteProspectButton } from "@/components/admin/delete-prospect-button";
 import { ProspectsFilters } from "@/components/admin/prospects-filters";
+
+// Forçar renderização dinâmica (sem cache)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/get-current-user";
 

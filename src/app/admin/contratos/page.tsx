@@ -9,6 +9,10 @@ import { ContratosFilters } from "@/components/admin/contratos-filters";
 import { DeleteContratoButton } from "@/components/admin/delete-contrato-button";
 import { getCurrentUser } from "@/lib/get-current-user";
 
+// Forçar renderização dinâmica (sem cache)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type ContratoWithCliente = {
   id: string;
   valor: Prisma.Decimal;

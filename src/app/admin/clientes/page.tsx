@@ -9,6 +9,10 @@ import type { Prisma } from "@prisma/client";
 import { ClientesFilters } from "@/components/admin/clientes-filters";
 import { getCurrentUser } from "@/lib/get-current-user";
 
+// Forçar renderização dinâmica (sem cache)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type ClienteWithContratos = {
   id: string;
   nome: string;
