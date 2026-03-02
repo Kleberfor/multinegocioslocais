@@ -22,6 +22,8 @@ import {
 import { ProspectTimeline } from "@/components/admin/prospect-timeline";
 import { ProspectStatusSelect } from "@/components/admin/prospect-status-select";
 import { AddInteracaoForm } from "@/components/admin/add-interacao-form";
+import { ConverterProspectModal } from "@/components/admin/converter-prospect-modal";
+import { ReatribuirProspect } from "@/components/admin/reatribuir-prospect";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -458,6 +460,22 @@ export default async function ProspectDetalhePage({ params }: PageProps) {
             </CardContent>
           </Card>
 
+          {/* Converter em Cliente */}
+          {prospect.statusPipeline !== "PAGO" && prospect.statusPipeline !== "ASSINADO" && (
+            <Card className="border-green-200 bg-green-50">
+              <CardHeader>
+                <CardTitle className="text-lg text-green-800">Fechar Venda</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ConverterProspectModal
+                  prospectId={prospect.id}
+                  prospectNome={prospect.nome}
+                  valorEstimado={prospect.valorEstimado ? Number(prospect.valorEstimado) : undefined}
+                />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Ações Rápidas */}
           <Card>
             <CardHeader>
@@ -496,7 +514,7 @@ export default async function ProspectDetalhePage({ params }: PageProps) {
                 </Link>
               )}
 
-              <Link href={`/proposta/${id}`} target="_blank" className="w-full">
+              <Link href={`/proposta/prospect/${id}`} target="_blank" className="w-full">
                 <Button variant="outline" className="w-full justify-start">
                   <BarChart3 className="w-4 h-4 mr-2 text-orange-600" />
                   Ver Proposta
@@ -510,7 +528,7 @@ export default async function ProspectDetalhePage({ params }: PageProps) {
             <CardHeader>
               <CardTitle className="text-lg">Vendedor Responsável</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {prospect.vendedor ? (
                 <div>
                   <p className="font-medium">{prospect.vendedor.name || prospect.vendedor.email}</p>
@@ -518,6 +536,17 @@ export default async function ProspectDetalhePage({ params }: PageProps) {
                 </div>
               ) : (
                 <p className="text-muted-foreground">Nenhum vendedor atribuído</p>
+              )}
+
+              {/* Reatribuição - apenas admin */}
+              {(session.user as { role?: string })?.role === "admin" && (
+                <div className="pt-3 border-t">
+                  <p className="text-sm text-muted-foreground mb-2">Reatribuir para:</p>
+                  <ReatribuirProspect
+                    prospectId={prospect.id}
+                    vendedorAtualId={prospect.vendedorId}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>

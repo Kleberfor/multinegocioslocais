@@ -54,7 +54,12 @@ export async function GET() {
     }
 
     const vendedores = await prisma.user.findMany({
-      where: { role: "vendedor" },
+      where: {
+        OR: [
+          { role: "vendedor" },
+          { role: "admin" },
+        ],
+      },
       select: {
         id: true,
         name: true,
@@ -63,15 +68,16 @@ export async function GET() {
         rg: true,
         comissao: true,
         ativo: true,
+        role: true,
         createdAt: true,
         _count: {
           select: {
-            prospectsAtribuidos: true,
-            leadsAtribuidos: true,
+            prospects: true,
+            leads: true,
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ role: "asc" }, { createdAt: "desc" }],
     });
 
     return NextResponse.json(vendedores);
