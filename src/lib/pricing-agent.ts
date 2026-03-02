@@ -63,6 +63,12 @@ export const SEGMENTOS: Record<string, SegmentoConfig> = {
     fatorMultiplicador: 1.0,
     clientesPotenciaisMes: 400,
   },
+  'farmacia': {
+    nome: 'Farmácia/Drogaria',
+    ticketMedio: 60,
+    fatorMultiplicador: 1.1,
+    clientesPotenciaisMes: 350,
+  },
   'clinica-saude': {
     nome: 'Clínica/Saúde',
     ticketMedio: 200,
@@ -415,6 +421,67 @@ function gerarParcelamento(valor: number): PropostaPrecificacao['parcelamento'] 
 export function gerarProposta(input: AnaliseInput): PropostaPrecificacao {
   // Buscar configuração do segmento
   const segmento = SEGMENTOS[input.segmento] || SEGMENTOS['outro'];
+
+  // Calcular score geral
+  const scoreGeral = calcularScoreGeral(input);
+
+  // Calcular oportunidade (quanto menor o score, maior a oportunidade)
+  const oportunidade = 100 - scoreGeral;
+
+  // Calcular fatores
+  const fatorConcorrencia = calcularFatorConcorrencia(input.concorrentes);
+  const fatorSegmento = segmento.fatorMultiplicador;
+
+  // Calcular valor base
+  let valorCalculado = VALOR_BASE + (oportunidade * VALOR_POR_PONTO);
+
+  // Aplicar fatores
+  valorCalculado = valorCalculado * fatorConcorrencia * fatorSegmento;
+
+  // Aplicar limites
+  const valorImplantacao = Math.round(
+    Math.min(Math.max(valorCalculado, VALOR_BASE), VALOR_MAXIMO)
+  );
+
+  // Calcular valor mensal (mínimo R$ 300)
+  const valorMensal = Math.max(VALOR_MENSAL_MINIMO, Math.round(valorImplantacao * 0.15));
+
+  // Gerar proposta completa
+  return {
+    valorImplantacao,
+    valorMensal,
+    parcelamento: gerarParcelamento(valorImplantacao),
+    roiEstimado: calcularROI(input, segmento, valorImplantacao),
+    justificativas: gerarJustificativas(input, segmento),
+    prioridades: gerarPrioridades(input),
+    scoreGeral,
+    oportunidade,
+  };
+}
+
+/**
+ * Agente de Precificação (versão assíncrona)
+ * Busca dados de mercado do banco antes de gerar proposta
+ */
+export async function gerarPropostaAsync(
+  input: AnaliseInput,
+  dadosMercado?: SegmentoConfig
+): Promise<PropostaPrecificacao> {
+  // Usar dados fornecidos ou buscar do banco
+  let segmento: SegmentoConfig;
+
+  if (dadosMercado) {
+    segmento = dadosMercado;
+  } else {
+    // Importação dinâmica para evitar dependência circular
+    try {
+      const { getDadosMercadoSegmento } = await import("@/lib/get-dados-mercado");
+      segmento = await getDadosMercadoSegmento(input.segmento);
+    } catch {
+      // Fallback para dados locais se falhar
+      segmento = SEGMENTOS[input.segmento] || SEGMENTOS["outro"];
+    }
+  }
 
   // Calcular score geral
   const scoreGeral = calcularScoreGeral(input);

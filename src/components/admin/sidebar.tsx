@@ -16,6 +16,7 @@ import {
   Calendar,
   Shield,
   UsersRound,
+  Database,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -67,6 +68,11 @@ const adminMenuItems = [
     label: "Vendedores",
     href: "/admin/vendedores",
     icon: UsersRound,
+  },
+  {
+    label: "Dados de Mercado",
+    href: "/admin/configuracoes/dados-mercado",
+    icon: Database,
   },
 ];
 

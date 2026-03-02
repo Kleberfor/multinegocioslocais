@@ -4,6 +4,7 @@
 export const SEGMENTOS_LIST = [
   { value: "restaurante", label: "Restaurante/Alimentação" },
   { value: "bar", label: "Bar/Pub" },
+  { value: "farmacia", label: "Farmácia/Drogaria" },
   { value: "clinica-saude", label: "Clínica/Saúde" },
   { value: "clinica-estetica", label: "Clínica Estética" },
   { value: "dentista", label: "Dentista/Odontologia" },
