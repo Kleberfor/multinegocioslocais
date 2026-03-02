@@ -13,6 +13,7 @@ import {
   DollarSign,
   Download,
   MessageSquare,
+  Pencil,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/get-current-user";
 
@@ -122,6 +123,12 @@ export default async function ClienteDetalhePage({ params }: PageProps) {
               Email
             </Button>
           </a>
+          <Link href={`/admin/clientes/${id}/editar`}>
+            <Button variant="outline" className="gap-2">
+              <Pencil className="w-4 h-4" />
+              Editar
+            </Button>
+          </Link>
         </div>
       </div>
 

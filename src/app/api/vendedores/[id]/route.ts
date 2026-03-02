@@ -71,8 +71,8 @@ export async function GET(
         updatedAt: true,
         _count: {
           select: {
-            prospectsAtribuidos: true,
-            leadsAtribuidos: true,
+            prospects: true,
+            leads: true,
           },
         },
       },
