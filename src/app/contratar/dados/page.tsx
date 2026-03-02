@@ -58,23 +58,21 @@ function DadosContent() {
   const isAdminFlow = fromAdmin && leadId;
   const isPropostaFlow = fromProposta && (leadId || prospectId);
 
-  // Valores da proposta - valores padrão acessíveis para negócios locais
-  const VALOR_PADRAO = 1500; // Valor mínimo de implantação
-  const VALOR_MAXIMO = 3000; // Valor máximo de implantação
-  const VALOR_MENSAL_PADRAO = 300; // Valor mínimo mensal
+  // Valores padrão (usado apenas se não houver valor definido na proposta)
+  const VALOR_PADRAO = 1500; // Fallback quando não há valor
+  const VALOR_MENSAL_PADRAO = 300; // Valor mensal padrão
   const proposta = leadData?.proposta;
 
   // Calcular valor base a partir de proposta, valorSugerido ou valorParam (prospect)
-  const valorBruto = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || Number(valorParam) || VALOR_PADRAO;
-  // SEMPRE limitar entre VALOR_PADRAO (1500) e VALOR_MAXIMO (3000)
-  const valorImplantacao = Math.min(Math.max(valorBruto, VALOR_PADRAO), VALOR_MAXIMO);
-  const valorMensal = Math.max(proposta?.valorMensal || VALOR_MENSAL_PADRAO, VALOR_MENSAL_PADRAO);
+  // Prioridade: 1) valorParam da URL (prospect), 2) proposta do lead, 3) valorSugerido do lead, 4) fallback
+  const valorImplantacao = Number(valorParam) || proposta?.valorImplantacao || Number(leadData?.valorSugerido) || VALOR_PADRAO;
+  const valorMensal = proposta?.valorMensal || VALOR_MENSAL_PADRAO;
 
-  // Calcular opções de parcelamento baseadas na proposta
+  // Calcular opções de parcelamento (alinhadas com a página de proposta)
   const opcoesPagamento = [
-    { parcelas: 1, valorParcela: valorImplantacao, label: "À Vista", desconto: true },
-    { parcelas: 6, valorParcela: Math.round(valorImplantacao / 6), label: "6x sem juros" },
-    { parcelas: 12, valorParcela: Math.round((valorImplantacao * 1.1) / 12), label: "12x (10% juros)", total: Math.round(valorImplantacao * 1.1) },
+    { parcelas: 1, valorParcela: valorImplantacao, total: valorImplantacao, label: "À Vista", desconto: true },
+    { parcelas: 3, valorParcela: Math.round(valorImplantacao / 3), total: valorImplantacao, label: "3x sem juros" },
+    { parcelas: 6, valorParcela: Math.round(valorImplantacao / 6), total: valorImplantacao, label: "6x sem juros" },
   ];
 
   const {
