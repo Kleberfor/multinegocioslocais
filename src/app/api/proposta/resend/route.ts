@@ -121,6 +121,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (!resultado.success) {
+      // Verificar se é erro de configuração
+      if (resultado.error === "Email não configurado") {
+        return NextResponse.json(
+          {
+            error: "Serviço de email não configurado",
+            details: "A variável RESEND_API_KEY não está definida. Configure no arquivo .env para habilitar o envio de emails."
+          },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
         { error: "Erro ao enviar email", details: resultado.error },
         { status: 500 }

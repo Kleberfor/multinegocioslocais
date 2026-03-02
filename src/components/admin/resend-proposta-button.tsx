@@ -49,8 +49,13 @@ export function ResendPropostaButton({
         body: JSON.stringify({ tipo, id }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
+        // Mensagem especial para serviço não configurado
+        if (response.status === 503) {
+          throw new Error("Serviço de email não configurado. Configure a variável RESEND_API_KEY no arquivo .env");
+        }
         throw new Error(data.error || "Erro ao reenviar proposta");
       }
 
