@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     // Extrair campos adicionais antes da validação
     const {
       leadId,
+      prospectId,
       valorTotal,
       parcelas: parcelasInput,
       valorGestaoMensal,
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       contratoParcelas = planoInfo.parcelas;
     }
 
-    // Buscar vendedorId do lead se existir
+    // Buscar vendedorId do lead ou prospect
     let vendedorId: string | null = null;
     if (leadId) {
       const lead = await prisma.lead.findUnique({
@@ -58,9 +59,15 @@ export async function POST(request: NextRequest) {
         select: { vendedorId: true },
       });
       vendedorId = lead?.vendedorId || null;
+    } else if (prospectId) {
+      const prospect = await prisma.prospect.findUnique({
+        where: { id: prospectId },
+        select: { vendedorId: true },
+      });
+      vendedorId = prospect?.vendedorId || null;
     }
 
-    // Criar cliente
+    // Criar cliente com link para prospect se existir
     const cliente = await prisma.cliente.create({
       data: {
         nome: data.nome,
@@ -71,6 +78,7 @@ export async function POST(request: NextRequest) {
         endereco: JSON.parse(JSON.stringify(data.endereco)),
         planoId: null, // Sempre null pois usamos valores dinâmicos
         vendedorId, // Vendedor que originou a venda
+        prospectId: prospectId || null, // Link bidirecional com prospect
       },
     });
 
@@ -97,6 +105,18 @@ export async function POST(request: NextRequest) {
         },
       }).catch(() => {
         // Ignorar se lead não existir ou não puder atualizar
+      });
+    }
+
+    // Atualizar status do prospect se existir
+    if (prospectId) {
+      await prisma.prospect.update({
+        where: { id: prospectId },
+        data: {
+          statusPipeline: "ASSINADO",
+        },
+      }).catch(() => {
+        // Ignorar se prospect não existir ou não puder atualizar
       });
     }
 

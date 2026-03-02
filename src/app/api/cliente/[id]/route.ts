@@ -81,9 +81,10 @@ export async function PUT(
 
     const data = validationResult.data;
 
-    // Verificar se cliente existe
+    // Verificar se cliente existe e se tem prospect associado
     const clienteExistente = await prisma.cliente.findUnique({
       where: { id },
+      include: { prospect: true },
     });
 
     if (!clienteExistente) {
@@ -102,6 +103,21 @@ export async function PUT(
         endereco: data.endereco ? JSON.parse(JSON.stringify(data.endereco)) : undefined,
       },
     });
+
+    // Sincronizar com Prospect se existir (link bidirecional)
+    if (clienteExistente.prospectId) {
+      await prisma.prospect.update({
+        where: { id: clienteExistente.prospectId },
+        data: {
+          nome: data.nome,
+          email: data.email,
+          telefone: data.telefone,
+          negocio: data.negocio,
+        },
+      }).catch((err) => {
+        console.error("Erro ao sincronizar prospect:", err);
+      });
+    }
 
     return NextResponse.json({
       id: cliente.id,

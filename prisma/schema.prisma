@@ -16,16 +16,19 @@ model Cliente {
   endereco   Json?
   planoId    String?
   vendedorId String?
+  prospectId String?    @unique
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   plano      Plano?     @relation(fields: [planoId], references: [id])
   vendedor   User?      @relation("ClientesVendedor", fields: [vendedorId], references: [id])
+  prospect   Prospect?  @relation(fields: [prospectId], references: [id])
   contratos  Contrato[]
   lead       Lead?
 
   @@index([cpfCnpj])
   @@index([email])
   @@index([vendedorId])
+  @@index([prospectId])
 }
 
 model Contrato {
@@ -208,6 +211,7 @@ model Prospect {
   vendedorId     String?
   interacoes     Interacao[]
   vendedor       User?       @relation(fields: [vendedorId], references: [id])
+  cliente        Cliente?
 
   @@index([createdAt])
   @@index([origem])
