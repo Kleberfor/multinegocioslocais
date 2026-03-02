@@ -43,6 +43,7 @@ function DadosContent() {
   const prospectId = searchParams.get("prospect");
   const leadId = searchParams.get("lead");
   const fromSource = searchParams.get("from");
+  const valorParam = searchParams.get("valor");
   const fromAdmin = fromSource === "admin";
   const fromProposta = fromSource === "proposta";
 
@@ -55,7 +56,7 @@ function DadosContent() {
 
   // Determinar tipo de fluxo
   const isAdminFlow = fromAdmin && leadId;
-  const isPropostaFlow = fromProposta && leadId;
+  const isPropostaFlow = fromProposta && (leadId || prospectId);
 
   // Valores da proposta - valores padrão acessíveis para negócios locais
   const VALOR_PADRAO = 1500; // Valor mínimo de implantação
@@ -63,8 +64,8 @@ function DadosContent() {
   const VALOR_MENSAL_PADRAO = 300; // Valor mínimo mensal
   const proposta = leadData?.proposta;
 
-  // Calcular valor base a partir de proposta ou valorSugerido
-  const valorBruto = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || VALOR_PADRAO;
+  // Calcular valor base a partir de proposta, valorSugerido ou valorParam (prospect)
+  const valorBruto = proposta?.valorImplantacao || Number(leadData?.valorSugerido) || Number(valorParam) || VALOR_PADRAO;
   // SEMPRE limitar entre VALOR_PADRAO (1500) e VALOR_MAXIMO (3000)
   const valorImplantacao = Math.min(Math.max(valorBruto, VALOR_PADRAO), VALOR_MAXIMO);
   const valorMensal = Math.max(proposta?.valorMensal || VALOR_MENSAL_PADRAO, VALOR_MENSAL_PADRAO);
@@ -104,9 +105,27 @@ function DadosContent() {
   useEffect(() => {
     if (prospectId) {
       setValue("prospectId", prospectId);
-      // Aqui poderia buscar dados do prospect para pré-preencher
+
+      // Buscar dados do prospect para pré-preencher
+      if (fromProposta) {
+        setIsLoadingLead(true);
+        fetch(`/api/prospects/${prospectId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && !data.error) {
+              // Pré-preencher formulário com dados do prospect
+              if (data.nome) setValue("nome", data.nome);
+              if (data.email) setValue("email", data.email);
+              if (data.telefone) setValue("telefone", data.telefone);
+              if (data.negocio) setValue("negocio", data.negocio);
+              setValue("planoId", "plano-proposta");
+            }
+          })
+          .catch((err) => console.error("Erro ao carregar prospect:", err))
+          .finally(() => setIsLoadingLead(false));
+      }
     }
-  }, [prospectId, setValue]);
+  }, [prospectId, fromProposta, setValue]);
 
   // Carregar dados do lead se vier do admin ou da proposta
   useEffect(() => {
@@ -185,6 +204,7 @@ function DadosContent() {
       const submitData = {
         ...data,
         leadId: leadId || undefined,
+        prospectId: prospectId || undefined,
         valorTotal,
         parcelas,
         valorGestaoMensal,

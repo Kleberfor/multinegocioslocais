@@ -379,6 +379,26 @@ export default async function PropostaProspectPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
+        {/* CTA - Aceitar Proposta */}
+        <Card className="mb-8 border-2 border-primary bg-gradient-to-r from-primary/10 to-primary/5">
+          <CardContent className="p-8 text-center">
+            <h3 className="text-2xl font-bold mb-4">Pronto para transformar seu negócio?</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Clique no botão abaixo para aceitar esta proposta e iniciar o processo de contratação.
+            </p>
+            <Link href={`/contratar/dados?prospect=${id}&from=proposta&valor=${valorEstimado}`}>
+              <Button size="lg" className="gap-2 text-lg px-8 py-6">
+                <CheckCircle className="w-5 h-5" />
+                Aceitar Proposta e Contratar
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground mt-4">
+              Você será direcionado para preencher seus dados e assinar o contrato
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
           <p>
