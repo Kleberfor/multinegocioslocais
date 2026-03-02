@@ -9,15 +9,7 @@ const updateClienteSchema = z.object({
   telefone: z.string().min(10, "Telefone inválido"),
   cpfCnpj: z.string().min(11, "CPF/CNPJ inválido"),
   negocio: z.string().min(2, "Nome do negócio deve ter pelo menos 2 caracteres"),
-  endereco: z.object({
-    rua: z.string().optional(),
-    numero: z.string().optional(),
-    complemento: z.string().optional(),
-    bairro: z.string().optional(),
-    cidade: z.string().optional(),
-    estado: z.string().optional(),
-    cep: z.string().optional(),
-  }).optional().nullable(),
+  endereco: z.record(z.string(), z.any()).optional().nullable(),
 });
 
 export async function GET(
@@ -128,6 +120,64 @@ export async function PUT(
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return NextResponse.json(
       { error: "Erro ao atualizar cliente", details: errorMessage },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // Verificar se cliente existe
+    const cliente = await prisma.cliente.findUnique({
+      where: { id },
+      include: {
+        contratos: true,
+        lead: true,
+      },
+    });
+
+    if (!cliente) {
+      return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+    }
+
+    // Deletar contratos associados primeiro
+    if (cliente.contratos.length > 0) {
+      await prisma.contrato.deleteMany({
+        where: { clienteId: id },
+      });
+    }
+
+    // Desassociar lead (não deletar, apenas remover referência)
+    if (cliente.lead) {
+      await prisma.lead.update({
+        where: { id: cliente.lead.id },
+        data: { clienteId: null },
+      });
+    }
+
+    // Deletar cliente
+    await prisma.cliente.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({
+      message: "Cliente excluído com sucesso",
+    });
+  } catch (error) {
+    console.error("Erro ao excluir cliente:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    return NextResponse.json(
+      { error: "Erro ao excluir cliente", details: errorMessage },
       { status: 500 }
     );
   }

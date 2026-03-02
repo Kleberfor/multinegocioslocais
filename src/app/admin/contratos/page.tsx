@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Download, FileText, DollarSign, Users, Clock } from "lucide-react";
+import { Eye, Download, FileText, DollarSign, Users, Clock, Pencil } from "lucide-react";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { ContratosFilters } from "@/components/admin/contratos-filters";
+import { DeleteContratoButton } from "@/components/admin/delete-contrato-button";
 import { getCurrentUser } from "@/lib/get-current-user";
 
 type ContratoWithCliente = {
@@ -244,8 +245,12 @@ export default async function ContratosPage({ searchParams }: PageProps) {
                         <div className="flex items-center gap-2">
                           <Link href={`/admin/contratos/${contrato.id}`}>
                             <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4 mr-1" />
-                              Ver
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/admin/contratos/${contrato.id}/editar`}>
+                            <Button variant="outline" size="sm">
+                              <Pencil className="w-4 h-4" />
                             </Button>
                           </Link>
                           <Link
@@ -256,6 +261,10 @@ export default async function ContratosPage({ searchParams }: PageProps) {
                               <Download className="w-4 h-4" />
                             </Button>
                           </Link>
+                          <DeleteContratoButton
+                            contratoId={contrato.id}
+                            clienteNome={contrato.cliente.nome}
+                          />
                         </div>
                       </td>
                     </tr>

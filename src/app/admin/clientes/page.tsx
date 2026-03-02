@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, Eye, MessageSquare } from "lucide-react";
+import { Mail, Eye, MessageSquare, Pencil, Trash2 } from "lucide-react";
+import { DeleteClienteButton } from "@/components/admin/delete-cliente-button";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { ClientesFilters } from "@/components/admin/clientes-filters";
@@ -189,10 +190,18 @@ export default async function ClientesPage({ searchParams }: PageProps) {
                           <div className="flex items-center gap-2">
                             <Link href={`/admin/clientes/${cliente.id}`}>
                               <Button variant="outline" size="sm">
-                                <Eye className="w-4 h-4 mr-1" />
-                                Ver
+                                <Eye className="w-4 h-4" />
                               </Button>
                             </Link>
+                            <Link href={`/admin/clientes/${cliente.id}/editar`}>
+                              <Button variant="outline" size="sm">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                            <DeleteClienteButton
+                              clienteId={cliente.id}
+                              clienteNome={cliente.nome}
+                            />
                           </div>
                         </td>
                       </tr>
