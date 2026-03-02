@@ -112,7 +112,9 @@ function DadosContent() {
   useEffect(() => {
     if (leadId && (fromAdmin || fromProposta)) {
       setIsLoadingLead(true);
-      fetch(`/api/leads/${leadId}`)
+      // Usar endpoint público para proposta, autenticado para admin
+      const endpoint = fromProposta ? `/api/leads/public/${leadId}` : `/api/leads/${leadId}`;
+      fetch(endpoint)
         .then((res) => res.json())
         .then((data) => {
           if (data && !data.error) {

@@ -20,8 +20,8 @@ async function getVendedores() {
       createdAt: true,
       _count: {
         select: {
-          prospectsAtribuidos: true,
-          leadsAtribuidos: true,
+          prospects: true,
+          leads: true,
         },
       },
     },
@@ -159,13 +159,13 @@ export default async function VendedoresPage() {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Target className="w-4 h-4 text-blue-500" />
-                          <span>{vendedor._count.prospectsAtribuidos}</span>
+                          <span>{vendedor._count.prospects}</span>
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <TrendingUp className="w-4 h-4 text-green-500" />
-                          <span>{vendedor._count.leadsAtribuidos}</span>
+                          <span>{vendedor._count.leads}</span>
                         </div>
                       </td>
                       <td className="p-4">

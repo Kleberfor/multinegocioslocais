@@ -534,34 +534,35 @@ function CheckoutContent() {
 
                       {/* Botões de ação */}
                       <div className="flex flex-col gap-3 pt-4 border-t">
-                        {/* Botão Simular Pagamento - só em modo teste */}
-                        {process.env.NEXT_PUBLIC_TEST_MODE === "true" && (
-                          <Button
-                            onClick={async () => {
-                              setIsProcessing(true);
-                              try {
-                                // Simular aprovação do pagamento
-                                const response = await fetch("/api/payment/simulate", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ pagamentoId: pixData.pagamentoId }),
-                                });
-                                if (response.ok) {
-                                  router.push(`/sucesso?cliente=${clienteId}`);
-                                }
-                              } catch (error) {
-                                console.error("Erro ao simular:", error);
-                              } finally {
-                                setIsProcessing(false);
+                        {/* Botão Simular Pagamento - sempre disponível em modo teste */}
+                        <Button
+                          onClick={async () => {
+                            setIsProcessing(true);
+                            try {
+                              // Simular aprovação do pagamento
+                              const response = await fetch("/api/payment/simulate", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ pagamentoId: pixData.pagamentoId }),
+                              });
+                              if (response.ok) {
+                                router.push(`/sucesso?cliente=${clienteId}`);
+                              } else {
+                                const data = await response.json();
+                                alert(data.error || "Erro ao simular pagamento");
                               }
-                            }}
-                            disabled={isProcessing}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Simular Pagamento Aprovado (Teste)
-                          </Button>
-                        )}
+                            } catch (error) {
+                              console.error("Erro ao simular:", error);
+                            } finally {
+                              setIsProcessing(false);
+                            }
+                          }}
+                          disabled={isProcessing}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Simular Pagamento Aprovado (Teste)
+                        </Button>
 
                         <Button
                           variant="outline"

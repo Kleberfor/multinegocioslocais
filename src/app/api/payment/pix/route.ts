@@ -2,17 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPixPayment } from "@/lib/mercadopago";
 
+// Modo de teste/simulação
+const TEST_MODE = process.env.TEST_MODE === "true" || !process.env.MERCADOPAGO_ACCESS_TOKEN;
+
 export async function POST(request: NextRequest) {
   try {
-    // Verificar se o token do Mercado Pago está configurado
-    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-      console.error("MERCADOPAGO_ACCESS_TOKEN não configurado");
-      return NextResponse.json(
-        { error: "Configuração de pagamento incompleta. Entre em contato com o suporte." },
-        { status: 500 }
-      );
-    }
-
     const body = await request.json();
     const { clienteId, contratoId } = body;
 
@@ -46,6 +40,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // MODO TESTE: Simular PIX sem chamar Mercado Pago
+    if (TEST_MODE) {
+      console.log("[PIX] Modo de teste ativado - simulando pagamento");
+
+      // Criar registro de pagamento simulado
+      const pagamento = await prisma.pagamento.create({
+        data: {
+          contratoId,
+          valor: contrato.valor,
+          parcela: 1,
+          status: "PENDENTE",
+          mpId: `TEST-${Date.now()}`,
+        },
+      });
+
+      // QR Code de exemplo (apenas visual)
+      const qrCodeSimulado = `00020126580014br.gov.bcb.pix0136${pagamento.id}5204000053039865802BR5925MULTINEGOCIOSLOCAIS6009SAO PAULO62070503***6304`;
+
+      return NextResponse.json({
+        success: true,
+        testMode: true,
+        pagamentoId: pagamento.id,
+        mpPaymentId: `TEST-${pagamento.id}`,
+        qrCode: qrCodeSimulado,
+        qrCodeBase64: null, // Sem imagem em modo teste
+        ticketUrl: null,
+        expirationDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 min
+      });
+    }
+
+    // MODO PRODUÇÃO: Usar Mercado Pago
     // Validar CPF/CNPJ
     const cpfCnpj = cliente.cpfCnpj?.replace(/\D/g, "");
     if (!cpfCnpj || (cpfCnpj.length !== 11 && cpfCnpj.length !== 14)) {

@@ -26,6 +26,7 @@ export interface ContractData {
   valorMensalidade: number;
   parcelas: number;
   valorTotal: number;
+  incluiGestaoMensal?: boolean;
 
   // Datas
   dataContrato: string;
@@ -158,15 +159,17 @@ export function generateContractHTML(data: ContractData): string {
       <th>Valor</th>
     </tr>
     <tr>
-      <td>Taxa de Implantação (única)</td>
+      <td>Taxa de Implantação${data.parcelas > 1 ? ` (${data.parcelas}x de ${formatCurrency(data.valorImplantacao / data.parcelas)})` : ""}</td>
       <td>${formatCurrency(data.valorImplantacao)}</td>
     </tr>
+    ${data.incluiGestaoMensal && data.valorMensalidade > 0 ? `
     <tr>
-      <td>Mensalidade (${data.parcelas} parcelas)</td>
+      <td>Gestão Mensal (a partir do 2º mês)</td>
       <td>${formatCurrency(data.valorMensalidade)}/mês</td>
     </tr>
+    ` : ""}
     <tr>
-      <td><strong>Valor Total do Contrato</strong></td>
+      <td><strong>Valor Total da Implantação</strong></td>
       <td><strong>${formatCurrency(data.valorTotal)}</strong></td>
     </tr>
   </table>

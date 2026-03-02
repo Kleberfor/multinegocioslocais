@@ -46,10 +46,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const planoId = cliente.planoId || "plano-6-meses";
-    const plano = PLANOS[planoId] || PLANOS["plano-6-meses"];
-    const isCustomizado = planoId === "plano-customizado";
-
     const endereco = cliente.endereco as {
       logradouro: string;
       numero: string;
@@ -68,11 +64,11 @@ export async function POST(request: NextRequest) {
     const dataVencimento = new Date();
     dataVencimento.setDate(dataVencimento.getDate() + 30);
 
-    // Para plano customizado (conversão de lead), usar valor do contrato diretamente
+    // SEMPRE usar valores do contrato - são os valores confirmados pelo cliente
     const valorTotal = Number(contrato.valor) || 0;
-    const valorImplantacao = isCustomizado ? valorTotal : plano.implantacao;
-    const valorMensalidade = isCustomizado ? 0 : plano.mensalidade;
-    const parcelas = isCustomizado ? 1 : plano.parcelas;
+    const valorImplantacao = valorTotal;
+    const valorMensalidade = Number(contrato.valorMensal) || 0;
+    const parcelas = contrato.parcelas || 1;
 
     const contractData: ContractData = {
       clienteNome: cliente.nome || "Nome não informado",
@@ -85,6 +81,7 @@ export async function POST(request: NextRequest) {
       valorMensalidade,
       parcelas,
       valorTotal,
+      incluiGestaoMensal: contrato.incluiGestaoMensal || false,
       dataContrato: new Date().toISOString(),
       dataVencimentoPrimeiraParcela: dataVencimento.toISOString(),
       contratoId: contrato.id.substring(0, 8).toUpperCase(),

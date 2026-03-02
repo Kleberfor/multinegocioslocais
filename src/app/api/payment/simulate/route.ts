@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // API para simular pagamento aprovado (apenas em modo de teste)
+const TEST_MODE = process.env.TEST_MODE === "true" || process.env.NEXT_PUBLIC_TEST_MODE === "true" || !process.env.MERCADOPAGO_ACCESS_TOKEN;
+
 export async function POST(request: NextRequest) {
   // Bloquear se não estiver em modo de teste
-  if (process.env.NEXT_PUBLIC_TEST_MODE !== "true") {
+  if (!TEST_MODE) {
     return NextResponse.json(
       { error: "Não disponível em produção" },
       { status: 403 }

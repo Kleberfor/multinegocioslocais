@@ -55,6 +55,14 @@ function SucessoContent() {
 
       if (response.ok) {
         setCliente(data);
+
+        // Verificar se o contrato foi pago ou assinado
+        const contrato = data.contratos?.[0];
+        if (contrato && contrato.status !== "PAGO" && contrato.status !== "ASSINADO") {
+          // Se não está pago nem assinado, redirecionar para checkout
+          window.location.href = `/contratar/checkout?cliente=${clienteId}`;
+          return;
+        }
       }
     } catch (error) {
       console.error("Erro ao carregar cliente:", error);
@@ -125,10 +133,12 @@ function SucessoContent() {
   };
 
   const handleWhatsApp = () => {
+    const contratoId = cliente?.contratos[0]?.id?.substring(0, 8).toUpperCase() || "N/A";
     const mensagem = encodeURIComponent(
       `Olá! Acabei de contratar o serviço MultiNegócios Locais.\n\n` +
       `Nome: ${cliente?.nome}\n` +
-      `Negócio: ${cliente?.negocio}\n\n` +
+      `Negócio: ${cliente?.negocio}\n` +
+      `Contrato: ${contratoId}\n\n` +
       `Gostaria de mais informações sobre os próximos passos.`
     );
     window.open(`https://wa.me/${WHATSAPP_NUMERO}?text=${mensagem}`, "_blank");
@@ -183,9 +193,15 @@ function SucessoContent() {
               </div>
               <div className="flex justify-between items-center pb-4 border-b">
                 <span className="text-muted-foreground">Contrato</span>
-                <span className="font-medium text-green-600">
-                  {cliente?.contratos[0]?.status === "ASSINADO"
-                    ? "Assinado"
+                <span className={`font-medium ${
+                  cliente?.contratos[0]?.status === "PAGO" ? "text-green-600" :
+                  cliente?.contratos[0]?.status === "ASSINADO" ? "text-blue-600" :
+                  "text-yellow-600"
+                }`}>
+                  {cliente?.contratos[0]?.status === "PAGO"
+                    ? "✓ Pago"
+                    : cliente?.contratos[0]?.status === "ASSINADO"
+                    ? "Assinado - Aguardando pagamento"
                     : "Processando"}
                 </span>
               </div>

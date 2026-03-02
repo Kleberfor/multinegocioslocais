@@ -32,6 +32,8 @@ interface ClienteData {
     id: string;
     valor: number;
     parcelas: number;
+    valorMensal: number | null;
+    incluiGestaoMensal: boolean;
     status: string;
   }[];
 }
@@ -200,15 +202,23 @@ function ContratoContent() {
                 <p className="font-medium">{cliente.negocio}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Valor Total</p>
+                <p className="text-sm text-muted-foreground">Valor da Implantação</p>
                 <p className="font-medium text-lg text-primary">
                   R$ {Number(contrato?.valor || 0).toLocaleString("pt-BR")}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Parcelas</p>
-                <p className="font-medium">{contrato?.parcelas}x</p>
+                <p className="font-medium">{contrato?.parcelas}x de R$ {Math.round(Number(contrato?.valor || 0) / (contrato?.parcelas || 1)).toLocaleString("pt-BR")}</p>
               </div>
+              {contrato?.incluiGestaoMensal && contrato?.valorMensal && (
+                <div className="md:col-span-2 pt-2 border-t">
+                  <p className="text-sm text-muted-foreground">Gestão Mensal (a partir do 2º mês)</p>
+                  <p className="font-medium text-primary">
+                    R$ {Number(contrato.valorMensal).toLocaleString("pt-BR")}/mês
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

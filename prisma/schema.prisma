@@ -1,6 +1,3 @@
-// Prisma Schema — MultiNegócios Locais
-// Blueprint: BP-2026-02-28-001 (CRM Prospects & Dashboard Vendedores)
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,170 +6,169 @@ datasource db {
   provider = "postgresql"
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MODELOS PRINCIPAIS
-// ═══════════════════════════════════════════════════════════════
-
-model Prospect {
-  id        String   @id @default(cuid())
-  placeId   String?
-  nome      String
-  email     String?
-  telefone  String?
-  negocio   String?
-  segmento  String?
-  cidade    String?
-  estado    String?
-  score     Int?
-  analise   Json?
-
-  // 🆕 Campos CRM (BP-2026-02-28-001)
-  vendedorId     String?
-  vendedor       User?     @relation("VendedorProspects", fields: [vendedorId], references: [id])
-  statusPipeline String    @default("NOVO") // NOVO, EM_CONTATO, REUNIAO_AGENDADA, PROPOSTA_ENVIADA, NEGOCIANDO, CONTRATO_ENVIADO, ASSINADO, PAGO, PERDIDO, INATIVO
-  origem         String    @default("CAPTACAO_ATIVA") // LP, CAPTACAO_ATIVA, INDICACAO
-  observacoes    String?   @db.Text
-  proximoContato DateTime?
-  valorEstimado  Decimal?  @db.Decimal(10, 2)
-
-  // Relacionamentos
-  interacoes     Interacao[] @relation("ProspectInteracoes")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([placeId])
-  @@index([createdAt])
-  @@index([vendedorId])
-  @@index([statusPipeline])
-  @@index([origem])
-}
-
-// ═══════════════════════════════════════════════════════════════
-// LEADS (Captura de dados + Análise interna)
-// ═══════════════════════════════════════════════════════════════
-
-model Lead {
-  id              String    @id @default(cuid())
-
-  // Dados de contato
-  nome            String
-  email           String
-  telefone        String
-  whatsapp        String?
-  negocio         String              // Nome do negócio
-  siteUrl         String?             // URL do site (se tiver)
-  segmento        String              // Categoria do negócio
-
-  // Dados do Google Business
-  placeId         String?             // ID do Google Places
-  enderecoGoogle  String?
-
-  // Scores (visíveis para o cliente)
-  scoreGeral      Int?
-  scoreGBP        Int?
-  scoreSite       Int?
-  scoreRedes      Int?
-
-  // Análise detalhada (INTERNO - não mostra para cliente)
-  analiseCompleta Json?               // Diagnóstico detalhado completo
-  argumentosFechamento Json?          // Lista de argumentos de venda
-  planoAcao       Json?               // Plano de ação sugerido
-
-  // Proposta gerada pelo agente
-  proposta        Json?               // Proposta de precificação
-  valorSugerido   Decimal?  @db.Decimal(10, 2)
-
-  // Status do lead
-  status          String    @default("NOVO") // NOVO, CONTATADO, NEGOCIANDO, CONVERTIDO, PERDIDO
-  motivoPerda     String?             // Se perdido, qual o motivo
-  observacoes     String?             // Notas internas
-
-  // Conversão
-  convertido      Boolean   @default(false)
-  clienteId       String?   @unique
-  cliente         Cliente?  @relation(fields: [clienteId], references: [id])
-
-  // Rastreamento
-  origem          String?             // De onde veio (google, instagram, direto, etc)
-  utmSource       String?
-  utmMedium       String?
-  utmCampaign     String?
-
-  // 🆕 Vendedor atribuído (BP-2026-02-28-001)
-  vendedorId      String?
-  vendedor        User?     @relation("VendedorLeads", fields: [vendedorId], references: [id])
-
-  // Relacionamentos
-  interacoes      Interacao[] @relation("LeadInteracoes")
-
-  // Timestamps
-  pesquisaEm      DateTime  @default(now())  // Data/hora da pesquisa
-  contatadoEm     DateTime?                   // Quando foi contatado
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@index([email])
-  @@index([status])
-  @@index([convertido])
-  @@index([pesquisaEm])
-  @@index([segmento])
-  @@index([vendedorId])
-}
-
 model Cliente {
-  id        String     @id @default(cuid())
-  nome      String
-  email     String
-  telefone  String
-  cpfCnpj   String
-  negocio   String
-  endereco  Json?
-  planoId   String?
-  plano     Plano?     @relation(fields: [planoId], references: [id])
-  contratos Contrato[]
-  lead      Lead?                   // Lead que originou este cliente
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id         String     @id @default(cuid())
+  nome       String
+  email      String
+  telefone   String
+  cpfCnpj    String
+  negocio    String
+  endereco   Json?
+  planoId    String?
+  vendedorId String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  plano      Plano?     @relation(fields: [planoId], references: [id])
+  vendedor   User?      @relation("ClientesVendedor", fields: [vendedorId], references: [id])
+  contratos  Contrato[]
+  lead       Lead?
 
-  @@index([email])
   @@index([cpfCnpj])
+  @@index([email])
+  @@index([vendedorId])
 }
 
 model Contrato {
-  id         String      @id @default(cuid())
-  clienteId  String
-  cliente    Cliente     @relation(fields: [clienteId], references: [id])
-  valor      Decimal     @db.Decimal(10, 2)
-  parcelas   Int
-  status     String      @default("PENDENTE") // PENDENTE, ASSINADO, PAGO, CANCELADO
-  pdfUrl     String?
-  assinadoEm DateTime?
-  pagamentos Pagamento[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  clienteId          String
+  valor              Decimal     @db.Decimal(10, 2)
+  parcelas           Int
+  valorMensal        Decimal?    @db.Decimal(10, 2)
+  incluiGestaoMensal Boolean     @default(false)
+  status             String      @default("PENDENTE")
+  pdfUrl             String?
+  assinadoEm         DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  cliente            Cliente     @relation(fields: [clienteId], references: [id])
+  pagamentos         Pagamento[]
 
   @@index([clienteId])
   @@index([status])
 }
 
+model FollowUp {
+  id              String    @id @default(cuid())
+  leadId          String
+  tipo            String
+  agendadoPara    DateTime
+  status          String    @default("PENDENTE")
+  executadoEm     DateTime?
+  assunto         String?
+  mensagem        String?
+  canal           String    @default("EMAIL")
+  resultado       String?
+  observacoes     String?
+  tentativas      Int       @default(0)
+  ultimaTentativa DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([agendadoPara])
+  @@index([leadId])
+  @@index([status])
+  @@index([tipo])
+}
+
+model FollowUpTemplate {
+  id             String   @id @default(cuid())
+  nome           String   @unique
+  tipo           String
+  canal          String
+  assunto        String?
+  mensagem       String
+  diasAposEvento Int      @default(1)
+  horaEnvio      String   @default("10:00")
+  ativo          Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([ativo])
+  @@index([tipo])
+}
+
+model Interacao {
+  id          String    @id @default(cuid())
+  prospectId  String?
+  leadId      String?
+  tipo        String
+  descricao   String
+  criadoPorId String
+  criadoPor   String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  lead        Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  prospect    Prospect? @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([leadId])
+  @@index([prospectId])
+  @@index([tipo])
+}
+
+model Lead {
+  id                   String      @id @default(cuid())
+  nome                 String
+  email                String
+  telefone             String
+  whatsapp             String?
+  negocio              String
+  siteUrl              String?
+  segmento             String
+  placeId              String?
+  enderecoGoogle       String?
+  scoreGeral           Int?
+  scoreGBP             Int?
+  scoreSite            Int?
+  scoreRedes           Int?
+  analiseCompleta      Json?
+  argumentosFechamento Json?
+  planoAcao            Json?
+  proposta             Json?
+  valorSugerido        Decimal?    @db.Decimal(10, 2)
+  status               String      @default("NOVO")
+  motivoPerda          String?
+  observacoes          String?
+  convertido           Boolean     @default(false)
+  clienteId            String?     @unique
+  origem               String?
+  utmSource            String?
+  utmMedium            String?
+  utmCampaign          String?
+  pesquisaEm           DateTime    @default(now())
+  contatadoEm          DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  vendedorId           String?
+  interacoes           Interacao[]
+  cliente              Cliente?    @relation(fields: [clienteId], references: [id])
+  vendedor             User?       @relation(fields: [vendedorId], references: [id])
+
+  @@index([convertido])
+  @@index([email])
+  @@index([pesquisaEm])
+  @@index([segmento])
+  @@index([status])
+  @@index([vendedorId])
+}
+
 model Pagamento {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   contratoId String
-  contrato   Contrato @relation(fields: [contratoId], references: [id])
-  valor      Decimal  @db.Decimal(10, 2)
-  parcela    Int      @default(1)
-  status     String   @default("PENDENTE") // PENDENTE, PROCESSANDO, PAGO, FALHOU
-  mpId       String?  // ID do Mercado Pago
+  valor      Decimal   @db.Decimal(10, 2)
+  parcela    Int       @default(1)
+  status     String    @default("PENDENTE")
+  mpId       String?
   nfeUrl     String?
   nfeNumero  String?
   paidAt     DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  contrato   Contrato  @relation(fields: [contratoId], references: [id])
 
   @@index([contratoId])
-  @@index([status])
   @@index([mpId])
+  @@index([status])
 }
 
 model Plano {
@@ -183,136 +179,60 @@ model Plano {
   mensalidade Decimal   @db.Decimal(10, 2)
   parcelas    Int
   ativo       Boolean   @default(true)
-  clientes    Cliente[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  clientes    Cliente[]
 
   @@index([ativo])
 }
 
-// ═══════════════════════════════════════════════════════════════
-// AUTENTICAÇÃO ADMIN
-// ═══════════════════════════════════════════════════════════════
+model Prospect {
+  id             String      @id @default(cuid())
+  placeId        String?
+  nome           String
+  email          String?
+  telefone       String?
+  score          Int?
+  analise        Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  cidade         String?
+  estado         String?
+  negocio        String?
+  observacoes    String?
+  origem         String      @default("CAPTACAO_ATIVA")
+  proximoContato DateTime?
+  segmento       String?
+  statusPipeline String      @default("NOVO")
+  valorEstimado  Decimal?    @db.Decimal(10, 2)
+  vendedorId     String?
+  interacoes     Interacao[]
+  vendedor       User?       @relation(fields: [vendedorId], references: [id])
+
+  @@index([createdAt])
+  @@index([origem])
+  @@index([placeId])
+  @@index([statusPipeline])
+  @@index([vendedorId])
+}
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String     @id @default(cuid())
+  email         String     @unique
   name          String?
   password      String
-  role          String    @default("vendedor") // admin, vendedor
-  ativo         Boolean   @default(true)
+  role          String     @default("vendedor")
   emailVerified DateTime?
-
-  // Dados pessoais do vendedor
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  ativo         Boolean    @default(true)
+  comissao      Decimal?   @db.Decimal(5, 2)
   cpf           String?
   rg            String?
-  comissao      Decimal?  @db.Decimal(5, 2) // Porcentagem (ex: 10.00 = 10%)
+  leads         Lead[]
+  prospects     Prospect[]
+  clientes      Cliente[]  @relation("ClientesVendedor")
 
-  // 🆕 Relacionamentos CRM (BP-2026-02-28-001)
-  prospectsAtribuidos Prospect[] @relation("VendedorProspects")
-  leadsAtribuidos     Lead[]     @relation("VendedorLeads")
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
+  @@index([ativo])
   @@index([role])
-  @@index([ativo])
-}
-
-// ═══════════════════════════════════════════════════════════════
-// FOLLOW-UP AUTOMÁTICO
-// ═══════════════════════════════════════════════════════════════
-
-model FollowUp {
-  id            String    @id @default(cuid())
-  leadId        String
-
-  // Agendamento
-  tipo          String    // PRIMEIRO_CONTATO, SEGUNDO_CONTATO, TERCEIRO_CONTATO, PROPOSTA, FECHAMENTO
-  agendadoPara  DateTime  // Data/hora agendada
-
-  // Status
-  status        String    @default("PENDENTE") // PENDENTE, ENVIADO, REALIZADO, CANCELADO
-  executadoEm   DateTime?
-
-  // Conteúdo
-  assunto       String?
-  mensagem      String?   @db.Text
-  canal         String    @default("EMAIL") // EMAIL, WHATSAPP, TELEFONE
-
-  // Resultado (após execução)
-  resultado     String?   // SUCESSO, SEM_RESPOSTA, NEGATIVO, REAGENDAR
-  observacoes   String?   @db.Text
-
-  // Rastreamento
-  tentativas    Int       @default(0)
-  ultimaTentativa DateTime?
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  @@index([leadId])
-  @@index([status])
-  @@index([agendadoPara])
-  @@index([tipo])
-}
-
-model FollowUpTemplate {
-  id            String    @id @default(cuid())
-
-  // Identificação
-  nome          String    @unique
-  tipo          String    // PRIMEIRO_CONTATO, SEGUNDO_CONTATO, etc
-  canal         String    // EMAIL, WHATSAPP
-
-  // Conteúdo
-  assunto       String?   // Para email
-  mensagem      String    @db.Text
-
-  // Timing
-  diasAposEvento Int      @default(1) // Dias após evento anterior
-  horaEnvio     String    @default("10:00") // Hora preferencial de envio
-
-  // Status
-  ativo         Boolean   @default(true)
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  @@index([tipo])
-  @@index([ativo])
-}
-
-// ═══════════════════════════════════════════════════════════════
-// 🆕 INTERAÇÕES / TIMELINE (BP-2026-02-28-001)
-// ═══════════════════════════════════════════════════════════════
-
-model Interacao {
-  id          String    @id @default(cuid())
-
-  // Pode ser de Prospect OU Lead
-  prospectId  String?
-  leadId      String?
-  prospect    Prospect? @relation("ProspectInteracoes", fields: [prospectId], references: [id], onDelete: Cascade)
-  lead        Lead?     @relation("LeadInteracoes", fields: [leadId], references: [id], onDelete: Cascade)
-
-  // Tipo de interação
-  tipo        String    // LIGACAO, EMAIL, WHATSAPP, REUNIAO, NOTA, STATUS_CHANGE
-
-  // Conteúdo
-  descricao   String    @db.Text
-
-  // Quem criou
-  criadoPorId String    // ID do usuário
-  criadoPor   String    // Nome do usuário (denormalizado para histórico)
-
-  // Metadados opcionais (ex: { de: "NOVO", para: "EM_CONTATO" } para STATUS_CHANGE)
-  metadata    Json?
-
-  createdAt   DateTime  @default(now())
-
-  @@index([prospectId])
-  @@index([leadId])
-  @@index([tipo])
-  @@index([createdAt])
 }

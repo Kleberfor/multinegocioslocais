@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
       leadId,
       valorTotal,
       parcelas: parcelasInput,
+      valorGestaoMensal,
       fromProposta,
       ...restBody
     } = body;
@@ -49,6 +50,16 @@ export async function POST(request: NextRequest) {
       contratoParcelas = planoInfo.parcelas;
     }
 
+    // Buscar vendedorId do lead se existir
+    let vendedorId: string | null = null;
+    if (leadId) {
+      const lead = await prisma.lead.findUnique({
+        where: { id: leadId },
+        select: { vendedorId: true },
+      });
+      vendedorId = lead?.vendedorId || null;
+    }
+
     // Criar cliente
     const cliente = await prisma.cliente.create({
       data: {
@@ -59,15 +70,19 @@ export async function POST(request: NextRequest) {
         negocio: data.negocio,
         endereco: JSON.parse(JSON.stringify(data.endereco)),
         planoId: null, // Sempre null pois usamos valores dinâmicos
+        vendedorId, // Vendedor que originou a venda
       },
     });
 
     // Criar contrato associado
+    const incluiGestaoMensal = valorGestaoMensal > 0;
     const contrato = await prisma.contrato.create({
       data: {
         clienteId: cliente.id,
         valor: contratoValor,
         parcelas: contratoParcelas,
+        valorMensal: incluiGestaoMensal ? valorGestaoMensal : null,
+        incluiGestaoMensal,
         status: "PENDENTE",
       },
     });
