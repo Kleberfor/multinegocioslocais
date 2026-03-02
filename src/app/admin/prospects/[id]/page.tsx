@@ -18,6 +18,7 @@ import {
   CheckCircle,
   Lightbulb,
   Target,
+  Pencil,
 } from "lucide-react";
 import { ProspectTimeline } from "@/components/admin/prospect-timeline";
 import { ProspectStatusSelect } from "@/components/admin/prospect-status-select";
@@ -301,6 +302,12 @@ export default async function ProspectDetalhePage({ params }: PageProps) {
           <span className={`px-4 py-2 rounded-full text-sm font-medium ${status.color}`}>
             {status.label}
           </span>
+          <Link href={`/admin/prospects/${id}/editar`}>
+            <Button variant="outline">
+              <Pencil className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
+          </Link>
           {prospect.score !== null && (
             <Link href={`/admin/prospects/${id}/score`}>
               <Button>
