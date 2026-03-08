@@ -265,6 +265,28 @@ function SucessoContent() {
           </CardContent>
         </Card>
 
+        {/* Onboarding CTA */}
+        <Card className="mb-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-xl font-bold mb-2">
+                  🎉 Complete sua configuração!
+                </h2>
+                <p className="text-blue-100 mb-4">
+                  Leva apenas 5 minutos e ajuda a personalizarmos ainda mais nosso trabalho para você
+                </p>
+                <Link href={`/cliente/onboarding?cliente=${clienteId}`}>
+                  <Button variant="secondary" size="lg">
+                    Começar Agora
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Ações */}
         <div className="grid gap-4 md:grid-cols-2 mb-8">
           <Button

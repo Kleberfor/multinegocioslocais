@@ -7,7 +7,7 @@ datasource db {
 }
 
 model Cliente {
-  id         String     @id @default(cuid())
+  id         String              @id @default(cuid())
   nome       String
   email      String
   telefone   String
@@ -16,14 +16,15 @@ model Cliente {
   endereco   Json?
   planoId    String?
   vendedorId String?
-  prospectId String?    @unique
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  plano      Plano?     @relation(fields: [planoId], references: [id])
-  vendedor   User?      @relation("ClientesVendedor", fields: [vendedorId], references: [id])
-  prospect   Prospect?  @relation(fields: [prospectId], references: [id])
+  prospectId String?             @unique
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  plano      Plano?              @relation(fields: [planoId], references: [id])
+  vendedor   User?               @relation("ClientesVendedor", fields: [vendedorId], references: [id])
+  prospect   Prospect?           @relation(fields: [prospectId], references: [id])
   contratos  Contrato[]
   lead       Lead?
+  onboarding OnboardingCliente?
 
   @@index([cpfCnpj])
   @@index([email])
@@ -259,4 +260,69 @@ model DadosMercado {
   @@unique([segmento, regiao])
   @@index([segmento])
   @@index([regiao])
+}
+
+model OnboardingCliente {
+  id                   String    @id @default(cuid())
+  clienteId            String    @unique
+  completado           Boolean   @default(false)
+  etapaAtual           Int       @default(1)
+
+  // Etapa 1: Boas-vindas (automático)
+  etapa1Completa       Boolean   @default(false)
+
+  // Etapa 2: Perfil do Negócio
+  etapa2Completa       Boolean   @default(false)
+  horarioAbertura      String?
+  horarioFechamento    String?
+  diasFuncionamento    Json?     // ["seg", "ter", "qua"...]
+  servicos             Json?     // ["Atendimento", "Delivery"...]
+  diferenciais         String?   // Texto livre
+
+  // Etapa 3: Redes Sociais
+  etapa3Completa       Boolean   @default(false)
+  instagram            String?
+  facebook             String?
+  linkedin             String?
+  twitter              String?
+  tiktok               String?
+  youtube              String?
+
+  // Etapa 4: Google Business Profile
+  etapa4Completa       Boolean   @default(false)
+  gbpConectado         Boolean   @default(false)
+  gbpUrl               String?
+  gbpStatus            String?   // "NAO_TEM", "TEM_NAO_GERENCIADO", "TEM_GERENCIADO"
+
+  // Etapa 5: Objetivos
+  etapa5Completa       Boolean   @default(false)
+  objetivoPrincipal    String?   // "MAIS_CLIENTES", "MELHOR_REPUTACAO", etc
+  metaClientes         Int?
+  metaFaturamento      Decimal?  @db.Decimal(10, 2)
+  prazoMeta            String?   // "3_MESES", "6_MESES", "12_MESES"
+
+  // Etapa 6: Preferências
+  etapa6Completa       Boolean   @default(false)
+  notificacaoEmail     Boolean   @default(true)
+  notificacaoWhatsApp  Boolean   @default(true)
+  frequenciaRelatorio  String?   // "SEMANAL", "QUINZENAL", "MENSAL"
+  melhorHorario        String?   // "MANHA", "TARDE", "NOITE"
+
+  // Etapa 7: Conclusão
+  etapa7Completa       Boolean   @default(false)
+  tourRealizado        Boolean   @default(false)
+  consultoriaAgendada  Boolean   @default(false)
+  dataConsultoria      DateTime?
+
+  // Controle
+  iniciadoEm           DateTime  @default(now())
+  completadoEm         DateTime?
+  tempoTotalMinutos    Int?
+  updatedAt            DateTime  @updatedAt
+
+  cliente              Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
+  @@index([completado])
+  @@index([etapaAtual])
 }
