@@ -10,7 +10,7 @@ interface Props {
   cliente?: {
     nome: string;
     negocio: string;
-  };
+  } | null;
 }
 
 export default function EtapaBoasVindas({ onProximo, isSaving, cliente }: Props) {

@@ -15,7 +15,7 @@ interface Props {
   isSaving: boolean;
   cliente?: {
     negocio: string;
-  };
+  } | null;
   onboarding?: any;
 }
 

@@ -17,7 +17,7 @@ interface Props {
   isSaving: boolean;
   cliente?: {
     nome: string;
-  };
+  } | null;
   clienteId?: string | null;
 }
 
