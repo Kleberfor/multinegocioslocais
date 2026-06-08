@@ -169,4 +169,8 @@ html {
   .container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+  /* Suporte a safe-area para iPhones com notch/home indicator */
+  .safe-area-bottom {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
 }

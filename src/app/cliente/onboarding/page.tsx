@@ -266,14 +266,14 @@ function OnboardingContent() {
       </div>
 
       {/* Conteúdo da etapa */}
-      <div className="container max-w-3xl py-8">
+      <div className="container max-w-3xl py-8 pb-28">
         {renderEtapa()}
       </div>
 
       {/* Navegação (rodapé fixo) */}
       {etapaAtual > 1 && etapaAtual < ETAPAS.length && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
-          <div className="container max-w-3xl flex justify-between">
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur border-t shadow-lg p-4 safe-area-bottom">
+          <div className="container max-w-3xl flex justify-between items-center">
             <Button
               variant="ghost"
               onClick={etapaAnterior}
@@ -282,6 +282,9 @@ function OnboardingContent() {
               <ChevronLeft className="w-4 h-4 mr-2" />
               Voltar
             </Button>
+            <span className="text-xs text-muted-foreground">
+              Etapa {etapaAtual} de {ETAPAS.length}
+            </span>
           </div>
         </div>
       )}
