@@ -4,6 +4,49 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Força light mode em todos os cenários.
+ *
+ * O Tailwind CSS v4 gera automaticamente regras
+ * @media (prefers-color-scheme: dark) que sobrescrevem
+ * background e texto com preto/branco. Como o app ainda
+ * não tem toggle de dark mode, forçamos light mode fixo.
+ */
+html {
+  color-scheme: light only;
+}
+
+/* Bloqueia as regras automáticas de dark mode do Tailwind v4 */
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: light only;
+  }
+  /* Trava todas as variáveis no tema claro */
+  :root {
+    --background: oklch(1 0 0) !important;
+    --foreground: oklch(0.145 0 0) !important;
+    --card: oklch(1 0 0) !important;
+    --card-foreground: oklch(0.145 0 0) !important;
+    --popover: oklch(1 0 0) !important;
+    --popover-foreground: oklch(0.145 0 0) !important;
+    --primary: oklch(0.55 0.2 250) !important;
+    --primary-foreground: oklch(0.985 0 0) !important;
+    --secondary: oklch(0.97 0 0) !important;
+    --secondary-foreground: oklch(0.205 0 0) !important;
+    --muted: oklch(0.97 0 0) !important;
+    --muted-foreground: oklch(0.556 0 0) !important;
+    --accent: oklch(0.97 0 0) !important;
+    --accent-foreground: oklch(0.205 0 0) !important;
+    --border: oklch(0.922 0 0) !important;
+    --input: oklch(0.922 0 0) !important;
+    --ring: oklch(0.708 0 0) !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #0c0a09 !important;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
