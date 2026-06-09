@@ -150,22 +150,45 @@ export async function DELETE(
       return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
     }
 
-    // Deletar contratos associados primeiro
+    // Deletar em ordem: dependentes primeiro (respeita FK constraints)
+    // 1. Pagamentos dos contratos
+    if (cliente.contratos.length > 0) {
+      await prisma.pagamento.deleteMany({
+        where: { contratoId: { in: cliente.contratos.map(c => c.id) } },
+      });
+    }
+
+    // 2. Contratos
     if (cliente.contratos.length > 0) {
       await prisma.contrato.deleteMany({
         where: { clienteId: id },
       });
     }
 
-    // Desassociar lead (não deletar, apenas remover referência)
+    // 3. FollowUps dos leads associados
     if (cliente.lead) {
-      await prisma.lead.update({
-        where: { id: cliente.lead.id },
-        data: { clienteId: null },
+      await prisma.followUp.deleteMany({
+        where: { leadId: cliente.lead.id },
+      });
+      // Interações do lead
+      await prisma.interacao.deleteMany({
+        where: { leadId: cliente.lead.id },
       });
     }
 
-    // Deletar cliente
+    // 4. Onboarding (cascade no schema, mas explícito é mais seguro)
+    await prisma.onboardingCliente.deleteMany({
+      where: { clienteId: id },
+    });
+
+    // 5. Desassociar e deletar lead
+    if (cliente.lead) {
+      await prisma.lead.delete({
+        where: { id: cliente.lead.id },
+      });
+    }
+
+    // 6. Cliente
     await prisma.cliente.delete({
       where: { id },
     });
